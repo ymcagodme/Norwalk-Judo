@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<meta name="viewport" content="width = device-width">
+<title>Norwalk Judo</title>
+
+<link type="text/css" rel="stylesheet" href="/static/jquery-ui-1.8.18.custom.css">
+<link type="text/css" rel="stylesheet" href="/static/main.css">
+<link type="text/css" rel="stylesheet" href="/static/table.css">
+<link type="text/css" rel="stylesheet" href="/static/ColVis.css">
+<link type="text/css" rel="stylesheet" href="/static/TableTools_JUI.css">
+<link type="text/css" rel="stylesheet" href="/static/jquery.dataTables_themeroller.css">
+<script type="text/javascript" src="/static/js/jquery-1.7.1.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery-ui-1.8.18.custom.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.dataTables.js"></script>
+<script type="text/javascript" src="/static/js/ColVis.js"></script>
+<script type="text/javascript" src="/static/js/TableTools.js"></script>
+<script type="text/javascript" src="/static/js/ZeroClipboard.js"></script>
+<script type="text/javascript" src="/static/js/FixedColumns.js"></script>
+<script type="text/javascript" src="/static/js/KeyTable.js"></script>
+
+<script type="text/javascript">
+$.ajaxSetup({ 
+     beforeSend: function(xhr, settings) {
+         function getCookie(name) {
+             var cookieValue = null;
+             if (document.cookie && document.cookie != '') {
+                 var cookies = document.cookie.split(';');
+                 for (var i = 0; i < cookies.length; i++) {
+                     var cookie = jQuery.trim(cookies[i]);
+                     // Does this cookie string begin with the name we want?
+                 if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                     break;
+                 }
+             }
+         }
+         return cookieValue;
+         }
+         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+             // Only send the token to relative URLs i.e. locally.
+             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+         }
+     } 
+});
+</script>
+
+<script type="text/javascript">
+(function($){
+	var table = {
+		onDocumentReady: function() {
+			var self = table;
+			asInitVals = new Array();
+			var clearBtn = $('#clear_search');
+			clearBtn.button();
+			clearBtn.click(self.clearSearch);
+
+			oTable = $('#member_set').dataTable({
+				"sDom": '<"H"TlfrC>t<"F"ip>',
+				"oColVis":{
+					"activate": "mouseover",
+					"aiExclude":  [ 0, 1 ],
+					"bRestore": true,
+				},
+				"oTableTools": {
+					"sSwfPath": "/static/swf/copy_cvs_xls_pdf.swf",
+					"sRowSelect": "multi",
+					"aButtons": [
+						{
+							"sExtends": "text",
+							"sButtonText": "Select all",
+							"fnClick": function(){
+								var oTT = TableTools.fnGetInstance( 'member_set' );
+								var trNode = $('#member_set tbody tr');
+								for( var i = 0; i < trNode.length; i++){
+									oTT.fnSelect( trNode[i] );
+								}
+							}
+						},
+						"select_none",
+						{
+							"sExtends": "text",
+							"sButtonText": "Download Full Info",
+							"fnClick": function(){
+								var dt = this;
+								var t = dt.fnGetSelected();
+								var sData = new Array();
+								$(t).each(function(){
+									sData.push(parseInt(this.id));
+								});
+								$.ajax({
+									url: 'gen_csv',
+									data: JSON.stringify({ members: sData}),
+									dataType: 'text',
+									contentType: 'application/json; charset=utf-8',
+									type: 'POST',
+									success: function(rData){
+										location.href = rData;
+									}
+								});
+							}
+						},
+						{
+							"sExtends": "text",
+							"sButtonText": "Show Email Info",
+							"fnClick": function(){
+								var dt = this;
+								var t = dt.fnGetSelected();
+								var sData = new Array();
+								$(t).each(function(){
+									sData.push(parseInt(this.id));
+								});
+								$('#parent_emails textarea').hide();
+								$('#member_emails textarea').hide();
+								$('#p_loading_img').show();
+								$('#m_loading_img').show();
+								console.log(sData);
+								$.ajax({
+									url: 'gen_email_info',
+									data: JSON.stringify({ members: sData}),
+									dataType: 'text',
+									contentType: 'application/json; charset=utf-8',
+									type: 'POST',
+									success: function(rData){
+										var emailObj = $.parseJSON(rData);
+										var parent_emails = $('#parent_emails textarea');
+										var member_emails = $('#member_emails textarea');
+										parent_emails.val(emailObj.parent_emails);
+										member_emails.val(emailObj.member_emails);
+									},
+									complete: function(){
+										$('#p_loading_img').hide();
+										$('#m_loading_img').hide();
+										$('#parent_emails textarea').show();
+										$('#member_emails textarea').show();
+									}
+								});
+							}
+						},
+						"copy",
+						"print",
+						"csv",
+						{
+							"sExtends": "pdf",
+							"sPdfOrientation": "landscape",
+							"mColumns": "visible"
+						}
+					]
+				},
+				"bProcessing": true,
+				"sScrollX": "100%",
+				"bScrollCollapse": true,
+				"bJQueryUI": true,
+				"sAjaxSource": 'query_all',
+				"sAjaxDataProp": 'aaData',
+				"sPaginationType": "full_numbers",
+				"oLanguage": {
+					"sSearch": "Search all colums:"
+				},
+				"fnPreDrawCallback": function(oSettings){
+				},
+				"fnDrawCallback": function(){
+				},
+				"fnInitComplete": function(){
+				},
+				"aoColumns":[
+					{"mDataProp": "first_name", "sClass": 'center'},
+					{"mDataProp": "last_name" , "sClass": 'center'},
+					{"mDataProp": "belt_color" , "sClass": 'center'},
+					{"mDataProp": "age" , "sClass": 'center'},
+					{"mDataProp": "birthday" , "sClass": 'center'},
+					{"mDataProp": "gender" , "sClass": 'center'},
+					{"mDataProp": "preferred_phone" , "sClass": 'center'},
+					{"mDataProp": "emergency_number" , "sClass": 'center'},
+					{"mDataProp": "email" , "sClass": 'center'},
+					{"mDataProp": "usjf" , "sClass": 'center'},
+					{"mDataProp": "grade" , "sClass": 'center'},
+					{"mDataProp": "activation" , "sClass": 'center'},
+				]
+			});
+
+			var keys = new KeyTable({
+				"table": $('#member_set')[0],
+				"datatable": oTable
+			});
+
+
+			$("tfoot input").keyup( function () {
+				var index = oTable.oApi._fnVisibleToColumnIndex(oTable.fnSettings(), $("tfoot input").index(this));
+				oTable.fnFilter( this.value, index);
+				$('textarea').val('');
+				var oTT = TableTools.fnGetInstance('member_set');
+				oTT.fnSelectNone();
+			} );
+
+			/*
+			   This is all columns filter
+		        */
+			$('#member_set_filter').on('keyup', function(){
+				$('textarea').val('');
+				var oTT = TableTools.fnGetInstance('member_set');
+				oTT.fnSelectNone();
+			});
+			
+			/*
+			 * Support functions to provide a little bit of 'user friendlyness' to the textboxes in 
+			 * the footer
+			 */
+			$("tfoot input").blur( function (i) {
+				if ( this.value == "" )
+				{
+					var index = oTable.oApi._fnVisibleToColumnIndex(oTable.fnSettings(), $("tfoot input").index(this));
+					this.className = "search_init";
+					this.value = asInitVals[index];
+				}
+			} );
+			$("tfoot input").each( function (i) {
+				asInitVals[i] = this.value;
+			} );
+			
+			$("tfoot input").focus( function () {
+				if ( this.className == "search_init" )
+				{
+					this.className = "";
+					this.value = "";
+				}
+			} );
+			
+
+			// resizing handler
+			$(window).bind('resize', function(){
+				oTable.fnAdjustColumnSizing();
+			});
+
+
+		},//onDocumentReady end
+		clearSearch: function(){
+			var self = table;
+			// clear age_filter
+			$('#age_filter input').val('');
+			$('#slider_range').slider('option', 'values', [0, 0]);
+
+			var inputs = $('tfoot input');
+			inputs.val('');
+			for(var i = 0; i < inputs.length; i++){
+				var index = oTable.oApi._fnVisibleToColumnIndex(oTable.fnSettings(), i);
+				oTable.fnFilter('', index);
+				inputs[i].className = "search_init";
+				inputs[i].value = asInitVals[index];
+			}
+			oTable.fnFilter('');
+			$('textarea').val('');
+			var oTT = TableTools.fnGetInstance('member_set');
+			oTT.fnSelectNone();
+
+		},// clearSearch
+		rowClickHandler: function(){
+			var self = table;
+			$('#member_set tbody tr').die().live('click', function(){
+				if( $(this).hasClass('row_selected') ){
+					$(this).removeClass('row_selected');
+				}
+				else{
+					$(this).addClass('row_selected');
+				}
+				var nTr = $(this)[0];
+				if( oTable.fnIsOpen(nTr) ){
+					oTable.fnClose(nTr);
+				}
+				else{
+					// FIXME: id is from modifying jquery.dataTables.js "DT_RowID" to "id"
+					var ajaxObj = Pane.table.getDetails(nTr.id);
+					sOut = Pane.table.normalizeDetails(ajaxObj);
+					oTable.fnOpen( nTr, sOut, 'details' );
+				}
+
+			});
+		},// rowClickHandler
+		getDetails: function(id){
+			var self = table;
+			return $.ajax({
+				url: 'member/' + id,
+				dataType: 'json'
+			});
+		},
+	};// End of table
+	var search = {
+		onDocumentReady: function() {
+			var self = search;
+
+			// Age slider filter
+			var age_min = $('#age_filter #min');
+			var age_max = $('#age_filter #max');
+			var age_slider = $('#slider_range');
+			$('#slider_range').slider({
+				range: true,
+				animate: true,
+				min: 0,
+				max: 150,
+				values: [0, 0],
+				slide: function(event ,ui){
+					$('#age_filter #min').val(ui.values[0]);
+					$('#age_filter #max').val(ui.values[1]);
+					$('textarea').val('');
+					var oTT = TableTools.fnGetInstance('member_set');
+					oTT.fnSelectNone();
+					oTable.fnDraw();
+				}
+			});
+			$.fn.dataTableExt.afnFiltering.push(function(oSettings, aData, iDataIndex ){
+				var iMin = $('#age_filter #min').val();
+				var iMax = $('#age_filter #max').val();
+				// FIXME: Age index is 6 (static > dynamic)
+				var iVersion = aData[3];
+				if ( iMin == "" && iVersion <= iMax )
+					return true;
+				else if ( iMin <= iVersion && iMax == "" )
+					return true;
+				else if ( iMin <= iVersion && iVersion <= iMax )
+					return true;
+				else if ( iMin == "" && iMax == "" )
+					return true;
+				else
+					return false;
+			});
+			age_min.off().on('keyup', function(){
+				age_slider.slider("option", "values", [age_min.val(), age_max.val()]);
+				oTable.fnDraw();
+				$('textarea').val('');
+				var oTT = TableTools.fnGetInstance('member_set');
+				oTT.fnSelectNone();
+			});
+			age_max.off().on('keyup', function(){
+				age_slider.slider("option", "values", [age_min.val(), age_max.val()]);
+				oTable.fnDraw();
+				$('textarea').val('');
+				var oTT = TableTools.fnGetInstance('member_set');
+				oTT.fnSelectNone();
+			});
+		},
+	};
+	Pane = {
+		table: table,
+		search: search,
+		onDocumentReady: function() {
+			var self = Pane;
+			self.table.onDocumentReady();
+			self.search.onDocumentReady();
+			$('#admin').on('click', function(){
+				window.open('/admin');
+				return false;
+			});
+			$('#gen_tournament_report').button().on('click', function(){
+				window.open('gen_tournament_report');		
+				return false;
+			});
+			$('#announce').button().on('click', function(){
+				window.open('announce');		
+				return false;
+			});
+		},
+	};
+	$(Pane.onDocumentReady);
+})(jQuery);
+</script>
+
+</head>
+
+<body>        
+	<div class="top_container">
+		<h2>Norwalk Judo</h2>
+		<button id="admin">Admin</button>
+		<div class="search_container">
+			<button id="clear_search">Clear Search</button>
+			<button id="gen_tournament_report">Tournament Report</button>
+			<button id="announce">Announce Event</button>
+		</div>
+
+		<table id="member_set">
+			<thead>
+				<tr>
+					<th>First Name</th>
+					<th>Last Name</th>
+					<th>Belt Color</th>
+					<th>Age</th>
+					<th>D.O.B</th>
+					<th>Gender</th>
+					<th>Phone #</th>
+					<th>Emergency #</th>
+					<th>Email</th>
+					<th>USJF#</th>
+					<th>Grade</th>
+					<th>Activation</th>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+			<tfoot>
+				<tr>
+					<th><input type="text" name="search_fname" value="First Name" class="search_init" /></th>
+					<th><input type="text" name="search_lname" value="Last Name" class="search_init" /></th>
+					<th><input type="text" name="search_belt_color" value="Belt Color" class="search_init" /></th>
+					<th><input type="text" name="search_age" value="Age" class="search_init" /></th>
+					<th><input type="text" name="search_dob" value="Birthday" class="search_init" /></th>
+					<th><input type="text" name="search_gender" value="Gender" class="search_init" /></th>
+					<th><input type="text" name="search_phone" value="Phone #" class="search_init" /></th>
+					<th><input type="text" name="search_emergency" value="Emergency #" class="search_init" /></th>
+					<th><input type="text" name="search_email" value="Email" class="search_init" /></th>
+					<th><input type="text" name="search_usjf" value="USJF #" class="search_init" /></th>
+					<th><input type="text" name="search_grade" value="Grade" class="search_init" /></th>
+					<th><input type="text" name="search_activation" value="Activation" class="search_init" /></th>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+	<div class="search_fn">
+		<div class="utility" id="age_filter">
+			<div>
+				<label for="min">Minimum age:</label>
+				<input type="text" id="min"></input>
+			</div>
+
+			<div>
+				<label for="max">Maximum age:</label>
+				<input type="text" id="max"></input>
+			</div>
+			<br />
+			<div id="slider_range"></div>
+		</div>
+
+		<div class="utility" id="parent_emails">
+			Parents' Emails:<br />
+			<img id="p_loading_img" src="/static/loading.gif" width="50%" style="display:none;"/>
+			<textarea rows="10" cols="30"></textarea>
+		</div>
+
+		<div class="utility" id="member_emails">
+			Members' Emails:<br />
+			<img id="m_loading_img" src="/static/loading.gif" width="50%" style="display:none;"/>
+			<textarea rows="10" cols="30"></textarea>
+		</div>
+	</div>
+
+	
+</body>
+</html>
+

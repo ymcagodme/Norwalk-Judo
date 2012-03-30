@@ -1,0 +1,14 @@
+.search_init{
+	color: #999;
+}
+
+td.details {
+	background-color: #d1cfd0;
+	border: 2px solid #A19B9E;
+}
+.center{
+	text-align: center;
+}
+.focus{
+	border:3px solid #36F;
+}

@@ -1,0 +1,37 @@
+body{
+}
+
+.top_container{
+	width: 100%;
+	margin: 0px auto;
+	display: block;
+}
+.sep{
+	clear: both;
+}
+.search_fn{
+	margin: 2em;
+}
+
+.utility{
+	float: left;
+	border: 2px solid green;
+	padding: 1em;
+	-webkit-border-radius: 20px;
+	-moz-border-radius: 20px;
+	border-radius: 20px;
+}
+
+#age_filter{
+	width: 250px;
+}
+
+#parent_emails{
+	float: left;
+	margin-left: 1em;
+}
+
+#member_emails{
+	float: left;
+	margin-left: 1em;
+}

@@ -1,0 +1,4 @@
+cron:
+- description: Membersip fee notification
+  url: /notify/expiration
+  schedule: every 24 hours

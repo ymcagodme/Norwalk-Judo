@@ -1,0 +1,41 @@
+{% extends "admin/change_form.html" %}
+
+{% block form_top %}
+  <p>You can create a new member or modify a member here.</p>
+{% endblock %}
+
+
+{% block extrahead %}
+{{ block.super }}
+<link type="text/css" rel="stylesheet" href="/static/admin.css">
+<script type="text/javascript">
+$(document).ready(function(){
+	$('#usjf_membership_set-group h2').html('USJF Membership');
+	$('.inline-group .inline-related tbody').on('DOMNodeInserted', function(){
+		dateField = $('.vDateField');
+		phone = $('.phone_number input');
+		phone.push($('input:#id_emergency_number')[0]);
+
+		dateField.each(function(){
+			$(this).attr('title', 'YYYY-DD-MM');
+			$(this).width(90);
+			$(this).tooltip({
+				position: 'bottom center',
+				effect: 'fade',
+				opacity: 0.8
+			});
+		});
+		phone.each(function(){
+			$(this).attr('title', 'XXX-XXX-XXXX');
+			$(this).tooltip({
+				position: 'bottom center',
+				effect: 'fade',
+				opacity: 0.8
+			});
+		});
+		console.log('T');
+	});
+}); 
+</script>
+{% endblock %}
+

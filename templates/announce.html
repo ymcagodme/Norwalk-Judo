@@ -1,0 +1,17 @@
+{% block title %}
+{% endblock %}
+
+{% block content %}
+	<h2>Announce Event</h2>
+	{% if SUCCESS %}
+	<div style="color:green; font-size: 20px;">Successfully Sent!</div>
+
+	{% else %}
+
+	<form action="announce" method="POST">{% csrf_token %}
+		{{ announce_form.as_p }}
+	<input type="submit" value="Send">
+	</form>
+
+	{% endif %}
+{% endblock %}
