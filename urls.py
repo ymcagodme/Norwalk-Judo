@@ -7,6 +7,8 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     url(r'^$', 'members.views.index'),
+    url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}),
+    #url(r'^logout/$', 'led.views.user_logout'),
     url(r'^query_all$', 'members.views.query_all'),
     url(r'^gen_email_info$', 'members.views.gen_email_info'),
     url(r'^gen_csv$', 'members.views.gen_csv'),
@@ -17,9 +19,6 @@ urlpatterns = patterns('',
     url(r'^notify/expiration$', 'members.views.notify_expiration'),
     url(r'^member/(?P<pk>\d+)/$', 'members.views.member_query'),
     url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
-    # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^logout$', 'members.views.user_logout'),
 )

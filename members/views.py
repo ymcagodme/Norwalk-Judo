@@ -21,6 +21,7 @@ from members.forms import AnnounceForm
 
 from google.appengine.api import mail
 
+@login_required
 def index(request):
     return render_to_response('index.html', {}, context_instance=RequestContext(request))
 
@@ -144,6 +145,7 @@ def get_current_belt(belt_list):
     else:
         return 'N/A'
 
+@csrf_exempt
 def gen_email_info(request):
     if request.method == 'POST':
         try: m = simplejson.loads(request.raw_post_data)
@@ -186,6 +188,7 @@ def serve_csv(request):
     response = M_CSV_RESPONSE
     return response
 
+@csrf_exempt
 def gen_csv(request):
     time = datetime.now()
     FILENAME = 'judo_members(%s).csv' % (date.isoformat(time), )
@@ -476,7 +479,7 @@ def usjf_expiration(days, repetitive=False):
     for u in usjf_list:
         expired_date = datetime.strptime(u['expired_date'], '%Y-%m-%d')
         delta = expired_date - datetime.now()
-        if u['renew_status']:
+        if u['renew_status'] or (delta.days < 0):
             continue
         elif repetitive:
             if days >= delta.days:
@@ -496,7 +499,7 @@ def m_fee_expiration(days, repetitive=False):
     for m in m_fee_list:
         due_date = datetime.strptime(m['due_date'], '%Y-%m-%d')
         delta = due_date - datetime.now()
-        if m['status']:
+        if m['status'] or (delta.days < 0):
             continue
         elif repetitive:
             if days >= delta.days:

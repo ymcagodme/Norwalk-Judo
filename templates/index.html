@@ -60,7 +60,7 @@ $.ajaxSetup({
 				"oColVis":{
 					"activate": "mouseover",
 					"aiExclude":  [ 0, 1 ],
-					"bRestore": true,
+					"bRestore": true
 				},
 				"oTableTools": {
 					"sSwfPath": "/static/swf/copy_cvs_xls_pdf.swf",
@@ -282,7 +282,7 @@ $.ajaxSetup({
 				url: 'member/' + id,
 				dataType: 'json'
 			});
-		},
+		}
 	};// End of table
 	var search = {
 		onDocumentReady: function() {
@@ -337,7 +337,7 @@ $.ajaxSetup({
 				var oTT = TableTools.fnGetInstance('member_set');
 				oTT.fnSelectNone();
 			});
-		},
+		}
 	};
 	Pane = {
 		table: table,
@@ -358,7 +358,7 @@ $.ajaxSetup({
 				window.open('announce');		
 				return false;
 			});
-		},
+		}
 	};
 	$(Pane.onDocumentReady);
 })(jQuery);
@@ -367,14 +367,23 @@ $.ajaxSetup({
 </head>
 
 <body>        
+	<header class=header>
+	<div class="inner_header">
+		<div class="nav_profile">
+			<button id="admin">Go to Admin</button>
+			<a href="/logout">Sign Out</a>
+		</div>
+		<a href="/"><img src="/static/logo_norwalk.png" /></a>
+	</div>
+	</header>
+	
 	<div class="top_container">
-		<h2>Norwalk Judo</h2>
-		<button id="admin">Admin</button>
 		<div class="search_container">
 			<button id="clear_search">Clear Search</button>
 			<button id="gen_tournament_report">Tournament Report</button>
 			<button id="announce">Announce Event</button>
 		</div>
+		<hr>
 
 		<table id="member_set">
 			<thead>
@@ -412,32 +421,32 @@ $.ajaxSetup({
 				</tr>
 			</tfoot>
 		</table>
-	</div>
-	<div class="search_fn">
-		<div class="utility" id="age_filter">
-			<div>
-				<label for="min">Minimum age:</label>
-				<input type="text" id="min"></input>
+		<div class="search_fn">
+			<div class="utility" id="age_filter">
+				<div>
+					<label for="min">Minimum age:</label>
+					<input type="text" id="min"></input>
+				</div>
+
+				<div>
+					<label for="max">Maximum age:</label>
+					<input type="text" id="max"></input>
+				</div>
+				<br />
+				<div id="slider_range"></div>
 			</div>
 
-			<div>
-				<label for="max">Maximum age:</label>
-				<input type="text" id="max"></input>
+			<div class="utility" id="parent_emails">
+				Parents' Emails:<br />
+				<img id="p_loading_img" src="/static/loading.gif" width="50%" style="display:none;"/>
+				<textarea rows="10" cols="30"></textarea>
 			</div>
-			<br />
-			<div id="slider_range"></div>
-		</div>
 
-		<div class="utility" id="parent_emails">
-			Parents' Emails:<br />
-			<img id="p_loading_img" src="/static/loading.gif" width="50%" style="display:none;"/>
-			<textarea rows="10" cols="30"></textarea>
-		</div>
-
-		<div class="utility" id="member_emails">
-			Members' Emails:<br />
-			<img id="m_loading_img" src="/static/loading.gif" width="50%" style="display:none;"/>
-			<textarea rows="10" cols="30"></textarea>
+			<div class="utility" id="member_emails">
+				Members' Emails:<br />
+				<img id="m_loading_img" src="/static/loading.gif" width="50%" style="display:none;"/>
+				<textarea rows="10" cols="30"></textarea>
+			</div>
 		</div>
 	</div>
 

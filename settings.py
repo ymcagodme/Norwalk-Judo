@@ -5,6 +5,8 @@ from djangoappengine.settings_base import *
 
 import os
 
+DEBUG = False
+
 # Activate django-dbindexer for the default database
 DATABASES['native'] = DATABASES['default']
 DATABASES['default'] = {'ENGINE': 'dbindexer', 'TARGET': 'native'}
@@ -52,3 +54,7 @@ TEMPLATE_DIRS = (os.path.join(os.path.dirname(__file__), 'templates'),)
 STATIC_URL = '/static/'
 
 ROOT_URLCONF = 'urls'
+
+LOGIN_URL = (
+    '/login/'        
+)

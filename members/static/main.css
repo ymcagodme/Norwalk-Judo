@@ -1,8 +1,9 @@
 body{
+	margin:0;
 }
 
 .top_container{
-	width: 100%;
+	width: 90%;
 	margin: 0px auto;
 	display: block;
 }
@@ -10,7 +11,7 @@ body{
 	clear: both;
 }
 .search_fn{
-	margin: 2em;
+	margin-top: 2em;
 }
 
 .utility{
@@ -34,4 +35,32 @@ body{
 #member_emails{
 	float: left;
 	margin-left: 1em;
+}
+
+.header{
+	height: 106px;
+	border-top:6px solid #871528;
+	border-bottom:1px solid #67666A;
+	margin-bottom:1em;
+	background:#EEE;
+}
+
+.inner_header{
+	width: 90%;
+	margin: 0 auto;
+}
+.inner_header img{
+	margin-top: 10px;
+}
+#title{
+	bottom: 5px;
+	font-size: 35px;
+	font-family:Arial Black, Gadget, sans-serif;
+	font-variant:small-caps;
+	color: #3B3B3B;
+	margin: 5px;
+}
+.nav_profile{
+	float:right;
+	margin-top:10px;
 }

@@ -1,0 +1,92 @@
+{% load url from future %}
+{% block content %}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<title>Login System</title>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.js"></script>
+<script type="text/javascript">
+(function($){
+	Pane = {
+		onDocumentReady: function() {
+			var self = Pane;
+			$('#id_username').focus();
+		},
+	};
+	$(Pane.onDocumentReady);
+})(jQuery);
+
+</script>
+
+<style>
+body{
+	width:960px;
+	margin: 0 auto;
+	background-color: black;
+	color: #72F2F2;
+}
+.login_dialog{
+	font-family: "Lucida Console", Monaco, monospace;
+	background-color: #123340;
+	font-variant: small-caps;
+	font-size: 20px;
+	border: 1px solid #3BBCD9;
+	color: #57E3F2;
+	padding: 1em;
+	width:250px;
+}
+.title{
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-variant: small-caps;
+	font-size: 40px;
+	margin-top: 2em;
+	margin-bottom: 10px;
+	width:291px;
+	background-color: #0B1E26;
+}
+input{
+	border: 1px solid #3BBCD9;
+	background-color: black;
+	color: white;
+}
+input:hover{
+	background-color: #0B1E26;
+}
+</style>
+
+</head>
+
+<body>        
+<center>
+
+<header class="title">Login Required</header>
+
+<div class="login_dialog">
+
+	<form method="post" action="{% url 'django.contrib.auth.views.login' %}">
+	{% csrf_token %}
+	<table>
+	<tr>
+	    <td>{{ form.username.label_tag }}</td>
+	    <td>{{ form.username }}</td>
+	</tr>
+	<tr>
+	    <td>{{ form.password.label_tag }}</td>
+	    <td>{{ form.password }}</td>
+	</tr>
+	</table>
+
+	<input type="submit" value="Login" />
+	<input type="hidden" name="next" value="{{ next }}" />
+	</form>
+
+</div>
+
+{% if form.errors %}
+<p style="color:red;">Invalid username or password. Please try again.</p>
+{% endif %}
+
+{% endblock %}
+
+</center>
