@@ -7,12 +7,26 @@ import os
 
 DEBUG = False
 
+#from google.appengine.tools import dev_appserver
+#import atexit
+#atexit.register(dev_appserver.TearDownStubs)
+
 # Activate django-dbindexer for the default database
 DATABASES['native'] = DATABASES['default']
-DATABASES['default'] = {'ENGINE': 'dbindexer', 'TARGET': 'native'}
+DATABASES['default'] = { 
+    'ENGINE': 'dbindexer', 
+    'TARGET': 'native', 
+    'DEV_APPSERVER_OPTIONS': { 
+        'use_sqlite': True, 
+    }, 
+}
 AUTOLOAD_SITECONF = 'indexes'
 
 SECRET_KEY = '=r-$b*8hglm+858&9t043hlm6-&6-3d3vfc4((7yd0dbrakhvi'
+
+AUTHENTICATION_BACKENDS = ( 
+'django.contrib.auth.backends.ModelBackend', 
+) 
 
 INSTALLED_APPS = (
 #    'django.contrib.admin',

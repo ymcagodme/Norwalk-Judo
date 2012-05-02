@@ -237,8 +237,9 @@ $.ajaxSetup({
 		clearSearch: function(){
 			var self = table;
 			// clear age_filter
-			$('#age_filter input').val('');
-			$('#slider_range').slider('option', 'values', [0, 0]);
+			$('#age_filter #min').val(0);
+			$('#age_filter #max').val(150);
+			$('#slider_range').slider('option', 'values', [0, 150]);
 
 			var inputs = $('tfoot input');
 			inputs.val('');
@@ -253,36 +254,7 @@ $.ajaxSetup({
 			var oTT = TableTools.fnGetInstance('member_set');
 			oTT.fnSelectNone();
 
-		},// clearSearch
-		rowClickHandler: function(){
-			var self = table;
-			$('#member_set tbody tr').die().live('click', function(){
-				if( $(this).hasClass('row_selected') ){
-					$(this).removeClass('row_selected');
-				}
-				else{
-					$(this).addClass('row_selected');
-				}
-				var nTr = $(this)[0];
-				if( oTable.fnIsOpen(nTr) ){
-					oTable.fnClose(nTr);
-				}
-				else{
-					// FIXME: id is from modifying jquery.dataTables.js "DT_RowID" to "id"
-					var ajaxObj = Pane.table.getDetails(nTr.id);
-					sOut = Pane.table.normalizeDetails(ajaxObj);
-					oTable.fnOpen( nTr, sOut, 'details' );
-				}
-
-			});
-		},// rowClickHandler
-		getDetails: function(id){
-			var self = table;
-			return $.ajax({
-				url: 'member/' + id,
-				dataType: 'json'
-			});
-		}
+		}// clearSearch
 	};// End of table
 	var search = {
 		onDocumentReady: function() {
@@ -297,11 +269,10 @@ $.ajaxSetup({
 				animate: true,
 				min: 0,
 				max: 150,
-				values: [0, 0],
+				values: [0, 150],
 				slide: function(event ,ui){
 					$('#age_filter #min').val(ui.values[0]);
 					$('#age_filter #max').val(ui.values[1]);
-					$('textarea').val('');
 					var oTT = TableTools.fnGetInstance('member_set');
 					oTT.fnSelectNone();
 					oTable.fnDraw();
@@ -425,12 +396,12 @@ $.ajaxSetup({
 			<div class="utility" id="age_filter">
 				<div>
 					<label for="min">Minimum age:</label>
-					<input type="text" id="min"></input>
+					<input type="text" id="min" value=0></input>
 				</div>
 
 				<div>
 					<label for="max">Maximum age:</label>
-					<input type="text" id="max"></input>
+					<input type="text" id="max" value=150></input>
 				</div>
 				<br />
 				<div id="slider_range"></div>

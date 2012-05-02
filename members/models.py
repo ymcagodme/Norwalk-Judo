@@ -1,6 +1,7 @@
 from django.db import models
 from django import forms
 
+
 class Member(models.Model):
     GENDER_CHOICE = (
         ('M', 'Male'),
@@ -23,18 +24,21 @@ class Member(models.Model):
         ('college', 'College'),        
         ('adult', 'Adult'),        
     )
-    avatar_img = models.ImageField(upload_to='avatar/', blank=True)
+    avatar_img = models.CharField(max_length=200, blank=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICE)
     birthday = models.DateField()
     grade = models.CharField(max_length=10, choices=GRADE_CHOICE, blank=True)
     email = models.EmailField(blank=True, null=True)
-    joined_date = models.DateField('date joined', blank=True, null=True)
-    emergency_number = models.CharField(max_length=20)
-    activation = models.BooleanField()
+    joined_date = models.DateField('Join Date', blank=True, null=True)
+    emergency_number = models.CharField('Emergency phone #', max_length=20) # Somehow, the verbose_name didn't work. Therefore, I make a hack on the change_view.html
+    activation = models.BooleanField('Active status', default=True)
     def __unicode__(self):
         return '%s %s' % (self.first_name, self.last_name)
+    class Meta:
+        verbose_name = 'Member\'s Information'
+        verbose_name_plural = 'Member\'s Information'
 
 class Parent(models.Model):
     RELATIONSHIP_CHOICE = (
@@ -56,6 +60,12 @@ class Parent(models.Model):
     occupation = models.CharField(max_length=50, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
+
+    def __unicode__(self):
+        return '%s %s' % (self.first_name, self.last_name)
+    class Meta:
+        verbose_name = 'Parent information'
+        verbose_name_plural = 'Parent information'
 
 class Tournament(models.Model):
     SCORE_CHOICE = (
@@ -90,23 +100,44 @@ class Tournament(models.Model):
     hosted_date = models.DateField('date hosted')
     belt_color = models.CharField(max_length=15, choices=BELT_COLOR_CHOICE)
 
+    def __unicode__(self):
+        return '%s' % (self.title, )
+    class Meta:
+        verbose_name = 'Tournament Experience'
+
 class Membership_fee(models.Model):
     member = models.ForeignKey(Member)
     amount = models.IntegerField()
     paid_date = models.DateField('date paid', blank=True, null=True)
-    due_date = models.DateField('date due')
+    due_date = models.DateField(verbose_name='Expiration Date')
     status = models.BooleanField()
+
+    def __unicode__(self):
+        return '%s: %s' % (self.member, self.amount)
+    class Meta:
+        verbose_name = 'Membership Fee'
 
 class USJF_membership(models.Model):
     member = models.ForeignKey(Member)
     number = models.CharField(max_length=30)
-    expired_date = models.DateField('date expired')
+    expired_date = models.DateField(verbose_name='Expiration Date')
     renew_status = models.BooleanField()
+    def __unicode__(self):
+        return '%s\'s USJF#: %s' % (self.member, self.number)
+    class Meta:
+        verbose_name = 'USJF Membership'
 
 class Last_modify_ip(models.Model):
     member = models.ForeignKey(Member)
-    pub_date = models.DateTimeField('date modified')
-    ip = models.IPAddressField()
+    pub_date = models.DateTimeField('date modified', auto_now=True)
+    ip = models.IPAddressField(null=True)
+
+    def __unicode__(self):
+        return self.ip
+
+    class Meta:
+        verbose_name = 'Last Modified IP Address'
+        verbose_name_plural = 'Last Modified IP Addresses'
 
 class Address(models.Model):
     STATES_CHOICE = (
@@ -174,9 +205,11 @@ class Address(models.Model):
     member = models.ForeignKey(Member)
     street = models.CharField(max_length=50)
     city = models.CharField(max_length=25)
-    state = models.CharField(max_length=5, choices=STATES_CHOICE)
+    state = models.CharField(max_length=5, choices=STATES_CHOICE, default='CA')
     postal = models.CharField(max_length=10)
-    country = models.CharField(max_length=20, choices=COUNTRIES_CHOICE)
+    country = models.CharField(max_length=20, choices=COUNTRIES_CHOICE, default='USA')
+    def __unicode__(self):
+        return '%s %s %s %s' % (self.street, self.city, self.state, self.postal)
 
 class Phone(models.Model):
     PHONE_TYPE_CHOICE = (
@@ -186,10 +219,14 @@ class Phone(models.Model):
         ('other', 'Other'), 
     )
     member = models.ForeignKey(Member)
-    phone_type = models.CharField(max_length=10, choices=PHONE_TYPE_CHOICE,blank=True)
+    phone_type = models.CharField(max_length=10, choices=PHONE_TYPE_CHOICE)
     phone_number = models.CharField(max_length=15)
     ext = models.CharField(max_length=10, blank=True, null=True)
-    preferred = models.BooleanField(blank=True)
+    preferred = models.BooleanField()
+    def __unicode__(self):
+        return 'Owner: %s' % (self.member, )
+    class Meta:
+        verbose_name = 'phone'
 
 class Belt(models.Model):
     BELT_COLOR_CHOICE = (
@@ -204,8 +241,12 @@ class Belt(models.Model):
     )
     member = models.ForeignKey(Member)
     color = models.CharField(max_length=15, choices=BELT_COLOR_CHOICE)
-    completed_date = models.DateField('date completed')
+    completed_date = models.DateField('completed date', blank=True, null=True)
 
+    def __unicode__(self):
+        return '%s: %s' % (self.member, self.color)
+    class Meta:
+        verbose_name = 'belt'
 
 class Announce(models.Model):
     pub_date = models.DateTimeField('Publish Date')

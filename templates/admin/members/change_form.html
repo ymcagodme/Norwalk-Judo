@@ -8,16 +8,49 @@
 {% block extrahead %}
 {{ block.super }}
 <link type="text/css" rel="stylesheet" href="/static/admin.css">
+<script type="text/javascript" src="/static/js/jquery.maskedinput-1.3.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
-	$('#usjf_membership_set-group h2').html('USJF Membership');
+	$('.emergency_number label').html('Emergency phone number:');
+	var dateField = $('.vDateField');
+	var phone = $('.phone_number input');
+	var emergency_number = $('input:#id_emergency_number');
+	phone.push(emergency_number[0]);
+
+	dateField.mask('9999-99-99');
+	phone.mask('999-999-9999');
+	console.log('Loaded');
+
+	dateField.each(function(){
+		$(this).attr('title', 'YYYY-MM-DD');
+		$(this).width(90);
+		$(this).tooltip({
+			position: 'bottom center',
+			effect: 'fade',
+			opacity: 0.8
+		});
+	});
+	phone.each(function(){
+		$(this).attr('title', 'XXX-XXX-XXXX');
+		$(this).tooltip({
+			position: 'bottom center',
+			effect: 'fade',
+			opacity: 0.8
+		});
+	});
 	$('.inline-group .inline-related tbody').on('DOMNodeInserted', function(){
-		dateField = $('.vDateField');
-		phone = $('.phone_number input');
-		phone.push($('input:#id_emergency_number')[0]);
+		console.log('T');
+		$('.emergency_number label').html('Emergency phone number:');
+		var dateField = $('.vDateField');
+		var phone = $('.phone_number input');
+		var emergency_number = $('input:#id_emergency_number');
+		phone.push(emergency_number[0]);
+
+		dateField.mask('9999-99-99');
+		phone.mask('999-999-9999');
 
 		dateField.each(function(){
-			$(this).attr('title', 'YYYY-DD-MM');
+			$(this).attr('title', 'YYYY-MM-DD');
 			$(this).width(90);
 			$(this).tooltip({
 				position: 'bottom center',
@@ -33,7 +66,6 @@ $(document).ready(function(){
 				opacity: 0.8
 			});
 		});
-		console.log('T');
 	});
 }); 
 </script>

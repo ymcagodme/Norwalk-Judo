@@ -31,6 +31,17 @@ indexes:
   - name: __key__
     direction: desc
 
+- kind: members_member
+  properties:
+  - name: activation
+  - name: __key__
+    direction: desc
+
+- kind: members_member
+  properties:
+  - name: gender
+  - name: first_name
+
 - kind: members_notification
   properties:
   - name: __key__
