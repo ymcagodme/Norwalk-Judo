@@ -82,6 +82,15 @@ class MemberAdmin(admin.ModelAdmin):
             ip_obj.save()
         obj.save()
 
+    def gen_qrcode(self, obj):
+        data = 'http://norwalkjudo.appsopt.com/members/%i/' % (obj.pk, )
+        size = 200
+        error_corrction = 'L'
+        url = 'https://chart.googleapis.com/chart?cht=qr&chs=%ix%i&chl=%s&chld=%s|0' % (size, size, data, error_corrction)
+        return '<img src=%s />' % url
+    gen_qrcode.allow_tags = True
+    gen_qrcode.short_description = 'QR Code'
+
     form = MemberForm
     fieldsets = [
         # missing avatar_url
@@ -90,7 +99,7 @@ class MemberAdmin(admin.ModelAdmin):
     ]
     inlines = [AddressInline, MemberPhoneInline, BeltInline, ParentInline, USJF_MembershipInline, FeeInline, TournamentInline]
 
-    list_display = ('first_name', 'last_name', 'emergency_number')
+    list_display = ('first_name', 'last_name', 'emergency_number', 'gen_qrcode')
     list_filter = ['activation', 'gender']
     ordering = ['first_name']
     save_on_top = True
