@@ -1,12 +1,11 @@
-from datetime import datetime
-from datetime import date
+from datetime import datetime, timedelta, date
 import time
 import csv
 
 # SEE: http://www.traddicts.org/webdevelopment/flexible-and-simple-json-serialization-for-django/ 
 from fix_json import JSONSerializer
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.views.decorators.csrf import csrf_exempt
@@ -23,8 +22,39 @@ from google.appengine.api import mail
 
 @login_required
 def index(request):
+    if request.is_mobile:
+        return mobile_index(request)
     return render_to_response('index.html', {}, context_instance=RequestContext(request))
 
+@login_required
+def mobile_index(request):
+    m_all = Member.objects.all().order_by('last_name')
+    for m in m_all:
+        details = get_details(m)
+        key_details = process_details(details)
+        addr_dict = details['addr'][0]
+        addr = '%s %s %s %s' % ( addr_dict['street'], addr_dict['city'], addr_dict['state'], addr_dict['postal'])
+        try:
+            usjf_exp = m.usjf_membership_set.all()[0].expired_date
+        except IndexError:
+            usjf_exp = 'N/A'
+        usjf = '%s(%s)' % (key_details['usjf'], usjf_exp)
+        attendance = [ a.date for a in m.attendance_set.all().order_by('date').reverse() ]
+        setattr(m, 'addr', addr)
+        setattr(m, 'usjf', usjf)
+        setattr(m, 'attendance', attendance)
+        setattr(m, 'parents', details['parent'])
+        setattr(m, 'phones', details['phone'])
+        setattr(m, 'age', key_details['age'])
+        setattr(m, 'belt_color', key_details['belt_color'].capitalize())
+        setattr(m, 'preferred_phone', key_details['preferred_phone'])
+
+    data = {
+        'members_list': m_all
+    }
+    return render_to_response('mobile_index.html', data, context_instance=RequestContext(request))
+
+@login_required
 def query_all(request):
     jsonSerializer = JSONSerializer()
     m_all = Member.objects.all()
@@ -42,16 +72,41 @@ def query_all(request):
 
     return HttpResponse(data, mimetype="application/json")
 
+@login_required
+@csrf_exempt
+def member_check_in(request, pk):
+    if request.method == 'POST':
+        m = Member.objects.filter(pk=pk)[0]
+        time = datetime.now() + timedelta(hours=-8)
+        today = time.date()
+        attendance_list = m.attendance_set.all().order_by('date').reverse()
+        try:
+            if attendance_list[0].date == today:
+                return HttpResponse(0)
+        except IndexError:
+            pass
+        m.attendance_set.create(date=today)
+        m.save()
+        return HttpResponse(today.strftime('%b %d, %Y'))
+
+@login_required
 def member_query(request, pk):
-    # Flexable json serializer
-    jsonSerializer = JSONSerializer()
-
-    m = Member.objects.filter(pk=pk)[0]
-    details = get_details(m)
-    d = {'aaData': details }
-
-    data = jsonSerializer.serialize(d)
-    return HttpResponse(data, mimetype="application/json")
+    try:
+        m = Member.objects.filter(pk=pk)[0]
+    except IndexError:
+        return HttpResponseNotFound('Not Found')
+    name = '%s %s' % (m.first_name, m.last_name)
+    time = datetime.now() + timedelta(hours=-8)
+    today = time.date()
+    attendance_record = [ str(d) for d in m.attendance_set.all() ]
+    attendance_record.reverse()
+    is_checked_today = False
+    try:
+        if attendance_record[0] == str(today):
+            is_checked_today = True
+    except IndexError:
+        pass
+    return render_to_response('app.html', {'name':name, 'isCheckedToday': is_checked_today, 'record': attendance_record}, context_instance=RequestContext(request))
 
 def get_details(m):
     # Flexable json serializer
@@ -124,8 +179,6 @@ def process_details(d):
     bday = d['bday']
     age = get_age(bday)
     key_data.update(age=age)
-    print key_data
-
 
     return key_data
 
@@ -146,6 +199,7 @@ def get_current_belt(belt_list):
         return 'N/A'
 
 @csrf_exempt
+@login_required
 def gen_email_info(request):
     if request.method == 'POST':
         try: m = simplejson.loads(request.raw_post_data)
@@ -183,14 +237,16 @@ def get_parent_email_without_name(m):
 # Global variable for serving the csv output with GET(HTTP)
 M_CSV_RESPONSE = HttpResponse()
 
+@login_required
 def serve_csv(request):
     global M_CSV_RESPONSE
     response = M_CSV_RESPONSE
     return response
 
 @csrf_exempt
+@login_required
 def gen_csv(request):
-    time = datetime.now()
+    time = datetime.now() + timedelta(hours=-8)
     FILENAME = 'judo_members(%s).csv' % (date.isoformat(time), )
     response = HttpResponse(mimetype='text/csv')
     response['Content-Disposition'] = 'attachment; filename=%s' % (FILENAME, )
@@ -367,8 +423,9 @@ def get_total_cols(id_list):
             cols['tournament'] = len(tournament_list)
     return cols
 
+@login_required
 def gen_tournament_report(request):
-    time = datetime.now()
+    time = datetime.now() + timedelta(hours=-8)
     FILENAME = 'tournament_score(%s).csv' % (date.isoformat(time), )
     response = HttpResponse(mimetype='text/csv')
     response['Content-Disposition'] = 'attachment; filename=%s' % (FILENAME, )
@@ -439,7 +496,7 @@ def announce(request):
         if announce_form.is_valid():
             subject = announce_form.cleaned_data['subject']
             body = announce_form.cleaned_data['body']
-            pub_date = datetime.now()
+            pub_date = datetime.now() + timedelta(hours=-8)
             ip = request.META['REMOTE_ADDR']
             announce_event = Announce()
             announce_event.subject = subject
@@ -478,7 +535,7 @@ def usjf_expiration(days, repetitive=False):
     expired_member = {}
     for u in usjf_list:
         expired_date = datetime.strptime(u['expired_date'], '%Y-%m-%d')
-        delta = expired_date - datetime.now()
+        delta = expired_date - datetime.now() + timedelta(hours=-8)
         if u['renew_status'] or (delta.days < 0):
             continue
         elif repetitive:
@@ -498,7 +555,7 @@ def m_fee_expiration(days, repetitive=False):
     expired_member = {}
     for m in m_fee_list:
         due_date = datetime.strptime(m['due_date'], '%Y-%m-%d')
-        delta = due_date - datetime.now()
+        delta = due_date - datetime.now() + timedelta(hours=-8)
         if m['status'] or (delta.days < 0):
             continue
         elif repetitive:
@@ -522,7 +579,7 @@ def notify_expiration(request):
     for key, val in m_fee.iteritems():
         m = Member.objects.filter(pk=key)[0]
         due_date = datetime.strptime(val['due_date'], '%Y-%m-%d')
-        delta = due_date - datetime.now()
+        delta = due_date - datetime.now() + timedelta(hours=-8)
 
         sender = 'Norwalk Judo <service@norwalkjudo.appspotmail.com>'
         recipients = get_parent_emails(m)
@@ -545,7 +602,7 @@ def notify_expiration(request):
     for key, val in usjf.iteritems():
         m = Member.objects.filter(pk=key)[0]
         expired_date = datetime.strptime(val['expired_date'], '%Y-%m-%d')
-        delta = expired_date - datetime.now()
+        delta = expired_date - datetime.now() + timedelta(hours=-8)
 
         sender = 'Norwalk Judo <service@norwalkjudo.appspotmail.com>'
         recipients = get_parent_emails(m)

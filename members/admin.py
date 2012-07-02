@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta, date
+
 from django import forms
 from django.contrib.localflavor.us.forms import USPhoneNumberField, USZipCodeField
 from django.contrib import admin
+from django.http import HttpResponse
 
 from members.models import Member
 from members.models import Parent
@@ -13,6 +16,13 @@ from members.models import USJF_membership
 from members.models import Announce
 from members.models import Notification
 from members.models import Last_modify_ip
+from members.models import Attendance
+
+from contextlib import closing
+from zipfile import ZipFile, ZIP_DEFLATED
+
+from google.appengine.ext import webapp
+from google.appengine.api import urlfetch
 
 
 class BeltInline(admin.TabularInline):
@@ -65,10 +75,31 @@ class LastModifyInline(admin.StackedInline):
     model = Last_modify_ip
     extra = 1
 
+class AttendanceInline(admin.TabularInline):
+    model = Attendance
+    extra = 1
+
 class MemberForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(MemberForm, self).__init__(*args, **kwargs)
         self.fields['emergency_number'] = USPhoneNumberField()
+
+def add_to_zipfile(zfile, url, fname):
+    contents = urlfetch.fetch(url).content
+    zfile.writestr(fname, contents)
+
+def gen_qrcodes_zipfile(modeladmin, request, queryset):
+    response = HttpResponse(mimetype='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="qrcode_ouput.zip"'
+
+    with closing(ZipFile(response, "w", ZIP_DEFLATED)) as outfile:
+        for m in queryset:
+            data = 'http://norwalkjudo.appspot.com/members/%i/' % (m.pk, )
+            url = 'https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=%s&chld=L|0' % (data,)
+            add_to_zipfile(outfile, url, '%s %s.png' % (m.first_name, m.last_name))
+    return response
+gen_qrcodes_zipfile.short_description = 'Generate the qrcode(s)'
+
 
 class MemberAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
@@ -83,13 +114,26 @@ class MemberAdmin(admin.ModelAdmin):
         obj.save()
 
     def gen_qrcode(self, obj):
-        data = 'http://norwalkjudo.appsopt.com/members/%i/' % (obj.pk, )
+        data = 'http://norwalkjudo.appspot.com/members/%i/' % (obj.pk, )
         size = 200
         error_corrction = 'L'
         url = 'https://chart.googleapis.com/chart?cht=qr&chs=%ix%i&chl=%s&chld=%s|0' % (size, size, data, error_corrction)
-        return '<img src=%s />' % url
+        return '<a href=%s target=_blank>View</a>' % (url,)
     gen_qrcode.allow_tags = True
     gen_qrcode.short_description = 'QR Code'
+
+    def is_checked(self, obj):
+        time = datetime.now() + timedelta(hours=-8)
+        today = time.date()
+        attendance_list = obj.attendance_set.all().order_by('date').reverse()
+        try:
+            if attendance_list[0].date == today:
+                return True
+        except IndexError:
+            return False
+        return False
+    is_checked.short_description = 'Attend Today'
+    is_checked.boolean = True
 
     form = MemberForm
     fieldsets = [
@@ -97,12 +141,32 @@ class MemberAdmin(admin.ModelAdmin):
         ('Personal Information',      {'fields': [ 'first_name', 'last_name', 'gender', 'birthday', 'emergency_number', 'email', 'joined_date', 'grade' ]}),
         ('Still attending?',          {'fields': ['activation']})
     ]
-    inlines = [AddressInline, MemberPhoneInline, BeltInline, ParentInline, USJF_MembershipInline, FeeInline, TournamentInline]
+    inlines = [AddressInline, MemberPhoneInline, BeltInline, ParentInline, USJF_MembershipInline, FeeInline, TournamentInline, AttendanceInline]
 
-    list_display = ('first_name', 'last_name', 'emergency_number', 'gen_qrcode')
+    list_display = ('first_name', 'last_name', 'emergency_number', 'gen_qrcode', 'is_checked')
     list_filter = ['activation', 'gender']
+    actions = [gen_qrcodes_zipfile, 'check_in_members']
     ordering = ['first_name']
     save_on_top = True
+
+    def check_in_members(self, request, queryset):
+        for m in queryset:
+            time = datetime.now() + timedelta(hours=-8)
+            today = time.date()
+            attendance_list = m.attendance_set.all().order_by('date').reverse()
+            try:
+                if attendance_list[0].date == today:
+                    continue
+            except IndexError:
+                pass
+            m.attendance_set.create(date=today)
+            m.save()
+        if len(queryset) == 0:
+            msg = '1 member was'
+        else:
+            msg = '%s members were' % len(queryset)
+        self.message_user(request, '%s successfully checked in today!' % msg)
+    check_in_members.short_description = 'Check in member(s) today'
 
 class AnnounceAdmin(admin.ModelAdmin):
     list_display = ('subject', 'pub_date')

@@ -26,6 +26,12 @@ indexes:
   - name: __key__
     direction: desc
 
+- kind: members_attendance
+  properties:
+  - name: member_id
+  - name: date
+    direction: desc
+
 - kind: members_member
   properties:
   - name: __key__
@@ -36,6 +42,17 @@ indexes:
   - name: activation
   - name: __key__
     direction: desc
+
+- kind: members_member
+  properties:
+  - name: activation
+  - name: first_name
+
+- kind: members_member
+  properties:
+  - name: activation
+  - name: gender
+  - name: first_name
 
 - kind: members_member
   properties:

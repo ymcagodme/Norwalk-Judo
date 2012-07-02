@@ -7,6 +7,7 @@ import os
 
 DEBUG = False
 
+TIME_ZONE = None
 #from google.appengine.tools import dev_appserver
 #import atexit
 #atexit.register(dev_appserver.TearDownStubs)
@@ -29,7 +30,6 @@ AUTHENTICATION_BACKENDS = (
 ) 
 
 INSTALLED_APPS = (
-#    'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sessions',
@@ -47,6 +47,7 @@ MIDDLEWARE_CLASSES = (
     # This loads the index definitions, so it has to come first
     'autoload.middleware.AutoloadMiddleware',
 
+    'members.middleware.MobileDetectionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

@@ -266,3 +266,10 @@ class Notification(models.Model):
     repetitive = models.BooleanField()
     def __unicode__(self):
         return '%s' % (self.event, )
+
+class Attendance(models.Model):
+    date = models.DateField()
+    member = models.ForeignKey(Member)
+
+    def __unicode__(self):
+        return self.date.isoformat()

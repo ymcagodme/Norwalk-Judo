@@ -15,6 +15,10 @@ libraries:
   version: latest
 
 handlers:
+- url: /favicon.ico
+  static_files: members/static/favicon.ico
+  upload: members/static/favicon.ico
+
 - url: /static
   static_dir: members/static
 
