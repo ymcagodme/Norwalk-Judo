@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+        </title>
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
+        <link rel="stylesheet" href="/static/my.css" />
+        <style>
+            /* App custom styles */
+        </style>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js">
+        </script>
+        <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js">
+        </script>
+    </head>
+    <body>
+        <div data-role="page" id="page1">
+            <div data-role="content">
+                <div style=" text-align:center">
+                    <img style="width: 300px; height: 75px; border-bottom: 1px solid #ccc" src="/static/logo_norwalk.png" />
+                </div>
+                <h2>
+			{{ name }}
+                </h2>
+		{% if isCheckedToday %}
+		<center>
+		<h3 style="color: green">Have checked today</h3>
+		</center>
+		{% else %}
+                <a data-role="button" data-transition="fade" href="#" data-icon="plus" data-iconpos="top">
+                    Check in
+                </a>
+		{% endif %}
+                <ul data-role="listview" data-divider-theme="b" data-inset="true" id="attendance_list">
+                    <li data-role="list-divider" role="heading" class="ui-li-has-count">
+                        Attendance Recored
+			<span class="ui-li-count ui-btn-up-c ui-btn-corner-all">{{ record|length }}</span>
+                    </li>
+		    {% for d in record %}
+                    <li data-theme="c" class="ui-li ui-li-static">
+                    	{{ d }}
+                    </li>
+		    {% empty %}
+                    <li data-theme="c" class="ui-li ui-li-static">
+                    	No record in database
+                    </li>
+		    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <script>
+            $(document).ready(function(){
+            	console.log('t');
+            	btn = $('a[data-role="button"]');
+		btn.on('click', function(){
+		    $.mobile.showPageLoadingMsg();
+		    var url = location.href;
+		    url = url + 'check_in/';
+		    $.ajax({
+			url: url,
+			type: 'POST',
+			success: function(rData){
+				if(rData != 0){
+					var recordList = $('#attendance_list');
+					var count = $('#attendance_list .ui-li-count');
+					if ({{ record|length }}){
+						var node = '<li data-theme="c" class="ui-li ui-li-static ui-body-c">' + rData + ' (Today)' + '</li>';
+					} else {
+						var node = '<li data-theme="c" class="ui-li ui-li-static ui-body-c ui-corner-buttom">' + rData + ' (Today)' + '</li>';
+						recordList.children().last().fadeOut().remove();
+					}
+					$.mobile.hidePageLoadingMsg();
+					btn.hide('fast', function(){
+						$(node).hide().insertAfter(recordList.children('li[role="heading"]')).slideDown('slow');
+						count.hide().text(parseInt( count.text() ) + 1).fadeIn('slow');
+					});
+				} else {
+					btn.children('span').html('Have checked today.');
+					$.mobile.hidePageLoadingMsg();
+				}
+			}
+		    });
+		});
+	    });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Norwalk Judo</title>
+        <link rel="stylesheet" href="/static/jqtouch.css" title="jQTouch">
+
+        <script src="/static/js/zepto.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/static/js/jqtouch.min.js" type="text/javascript" charset="utf-8"></script>
+
+        <script type="text/javascript" charset="utf-8">
+            var jQT = new $.jQTouch({
+            	icon: '/static/iphone/iphone.png',
+            	icon4: '/static/iphone/iphone_retina.png',
+            	startupScreen: '/static/iphone/loading_page.png',
+                statusBar: 'black-translucent',
+                themeSelectionSelector: '#jqt #themes ul',
+            });
+	    
+	    $(function(){
+		    $('form[name="attendance"] .greenButton').click(function(e){
+		    	    console.log(e);
+		    	    var form = $(this).parent();
+		    	    var url = form.attr('action');
+		    	    var ul = form.children('ul');
+		    	    var btn = $(this);
+		    	    btn.html('loading...');
+			    $.ajax({
+			    	url: url,
+				type: 'POST',
+				success: function(rData){
+					if(rData != 0){
+						var node = '<li>' + rData + '</li>';
+						$(node).insertAfter(ul.children('.sep'));
+						btn.html('Check in today');
+					} else {
+						btn.html('Have checked today.');
+						btn.removeClass('greenButton').addClass('grayButton');
+					}
+				}
+			    });
+		    	    
+		    });
+	    });
+	    
+        </script>
+        <style type="text/css" media="screen">
+            #jqt.fullscreen #home .info {
+                display: none;
+            }
+            div#jqt #about {
+                padding: 100px 10px 40px;
+                text-shadow: rgba(0, 0, 0, 0.3) 0px -1px 0;
+                color: #999;
+                font-size: 13px;
+                text-align: center;
+                background: #161618;
+            }
+            div#jqt #about p {
+                margin-bottom: 8px;
+            }
+            div#jqt #about a {
+                color: #fff;
+                font-weight: bold;
+                text-decoration: none;
+            }
+	    div#attendance a small{
+	    	width:25%;
+	    }
+        </style>
+    </head>
+    <body>
+        <div id="jqt">
+            <div id="about" class="selectable">
+                    <p><strong>Norwalk Judo Database</strong><br>Version 1.0<br>
+                        <a href="mailto:ymcagodme@gmail.com">By David Huang</a></p>
+                    <p><br><br><a href="#" class="grayButton goback">Close</a></p>
+            </div>
+            <div id="buttons">
+                <div class="toolbar">
+                    <h1>Buttons!</h1>
+                    <a href="#" class="back">Home</a>
+                </div>
+                <div style="margin-top: 10px;" class="scroll">
+                    <a href="#" class="whiteButton">White</a>
+                    <br>
+                    <a href="#" class="grayButton">Gray</a>
+                    <br>
+                    <a href="#" class="redButton">Red</a>
+                    <br>
+			    $.ajax({
+			    	url: '/'
+			    });
+                    <a href="#" class="greenButton">Green</a>
+                </div>
+            </div>
+
+            <div id="members">
+                <div class="toolbar">
+                    <h1>Members </h1>
+                    <a href="#" class="back">Back</a>
+                </div>
+                <ul class="edgetoedge scroll">
+			{% for m in members_list %}
+			<li class="forward"><a href="#{{ m.pk }}">{{ m.last_name }}, <em>{{ m.first_name }}</em></a></li>
+			{% endfor %}
+                </ul>
+            </div>
+            <div id="attendance">
+                <div class="toolbar">
+                    <h1>Attendance </h1>
+                    <a href="#" class="back">Back</a>
+                </div>
+                <ul class="edgetoedge scroll">
+			{% for m in members_list %}
+			<li class="arrow"><a href="#{{ m.pk }}_attendance">{{ m.last_name }}, <em>{{ m.first_name }}</em><small>{{ m.attendance|first }}</small></a></li>
+			{% endfor %}
+                </ul>
+            </div>
+            <div id="home" class="current">
+                <div class="toolbar">
+                    <h1>Norwalk Judo</h1>
+                    <a class="button slideup" id="infoButton" href="#about">About</a>
+                </div>
+                <div class="scroll">
+                    <h2>Main Functions</h2>
+                    <ul class="rounded">
+			<li class="arrow"><a href="#members">Members' Information<small class="counter">{{ members_list|length }}</small></a> </li>
+                        <li class="arrow"><a href="#attendance">Attendance </a></li>
+                    </ul>
+                    <h2>External Links</h2>
+                    <ul class="rounded">
+                        <li class="forward"><a target="_blank" href="http://www.norwalkjudo.com/">Homepage</a></li>
+                        <li class="forward"><a target="_blank" href="http://www.youtube.com/norwalkjudo">YouTube Channel</a></li>
+                    </ul>
+                    <ul class="individual">
+                        <li><a target="_blank" href="mailto:ymcagodme@gmail.com">Mail to Admin</a></li>
+                        <li><a target="_blank" href="mailto:glickjh@airproducts.com">Mail to President</a></li>
+                    </ul>
+                    <div class="info">
+			    <p>Norwalk Judo Dojo<br />Inspire your life.</p>
+                    </div>
+                </div>
+            </div>
+
+	    {% for m in members_list %}
+	    <div id="{{ m.pk }}">
+                <div class="toolbar">
+		    <h1>{{ m.first_name }} {{ m.last_name }}</h1>
+                    <a href="#" class="back">Back</a>
+                </div>
+		<ul class="edgetoedge scroll">
+			<li class="sep">Basic Information</li>
+			<li><a href="#">Rank <small>{{ m.belt_color }}</small></a></li>
+			<li><a href="#">Age <small>{{ m.age }}</small></a></li>
+			<li><a href="#">D.O.B <small>{{ m.birthday }}</small></a></li>
+			<li><a href="#">Gender <small>{{ m.gender }}</small></a></li>
+			<li><a href="mailto:{{ m.email }}">Email <small>{{ m.email }}</small></a></li>
+			<li><a href="tel:{{ m.preferred_phone }}">Phone # <small>{{ m.preferred_phone }}</small></a></li>
+			<li><a href="tel:{{ m.emergency_number }}">Emergency # <small>{{ m.emergency_number }}</small></a></li>
+			<li><a href="#">USJF # <small>{{ m.usjf }}</small></a></li>
+
+			<li class="sep">Address</li>
+			<li><a href="http://maps.google.com/maps?q={{ m.addr }}">{{ m.addr }}</a></li>
+
+			<li class="sep">Phones</li>
+			{% for p in m.phones %}
+			<li><a href="tel:{{ p.phone_number }}">{{ p.phone_type.capitalize }} <small>{{ p.phone_number }}</small></a></li>
+			{% endfor %}
+
+			{% for p in m.parents %}
+			<li class="sep">Parents - {{ p.relationship }}</li>
+			<li><a href="#">{{ p.first_name }} {{ p.last_name }}</a></li>
+			<li><a href="tel:{{ p.phone_number }}">Phone # <small>{{ p.phone_number }}</small></a></li>
+			<li><a href="mailto:{{ p.email }}">Email <small>{{ p.email }}</small></a></li>
+			{% endfor %}
+		</ul>
+            </div>
+	    {% endfor %}
+
+	    {% for m in members_list%}
+	    <form id="{{ m.pk }}_attendance" action="/members/{{ m.pk }}/check_in/" method="POST" class="form" name="attendance">{% csrf_token %}
+                <div class="toolbar">
+		    <h1>{{ m.first_name }} {{ m.last_name }}</h1>
+		    <a href="#attendance" class="back">Back</a>
+                </div>
+		<a style="margin-top: 10px; margin-bottom: 10px;" href="#" class="greenButton">Check in today</a>
+		<ul class="edgetoedge scroll">
+			<li class="sep">Attendance Record</li>
+			{% for a in m.attendance %}
+			<li>{{ a }}</li>
+			{% endfor %}
+		</ul>
+
+	    </form>
+	    {% endfor %}
+        </div>
+    </body>
+</html>

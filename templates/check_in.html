@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<meta name="viewport" content="width = device-width">
+<title>Memebr Check In System</title>
+<script type="text/javascript" src="/static/js/jquery-1.7.1.min.js"></script>
+<script type="text/javascript">
+(function($){
+	Pane = {
+		onDocumentReady: function() {
+			var self = Pane;
+			$('#id_username').focus();
+		},
+	};
+	$(Pane.onDocumentReady);
+})(jQuery);
+
+</script>
+
+<style>
+body{
+	width:100%;
+	margin: 0 auto;
+}
+.title{
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-variant: small-caps;
+	font-size: 50px;
+}
+
+</style>
+
+</head>
+
+<body>        
+
+<center>
+<div class="top_container">
+	<header class="title">{{ name }}</header>
+	<hr>
+	<div class="content">
+		<table border="1">
+			<tbody>
+				{% for r in record %}
+				<tr>
+					<td>{{ r }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+			
+		</table>
+	</div>
+
+</div>
+</center>
+</body>        

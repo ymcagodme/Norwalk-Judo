@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<meta name="viewport" content="width = device-width">
+<title>Member | Judo Tournament</title>
+
+<link type="text/css" rel="stylesheet" href="/static/jquery-ui-1.8.18.custom.css">
+<link type="text/css" rel="stylesheet" href="/static/jquery.noty.css">
+<link type="text/css" rel="stylesheet" href="/static/noty_theme_default.css">
+<link type="text/css" rel="stylesheet" href="/static/schedule.css">
+<script type="text/javascript" src="/static/js/jquery-1.7.1.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery-ui-1.8.18.custom.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.noty.js"></script>
+
+<script type="text/javascript">
+var customizeForDevice = function(){
+    var ua = navigator.userAgent;
+    var checker = {
+      iphone: ua.match(/(iPhone|iPod|iPad)/),
+      blackberry: ua.match(/BlackBerry/),
+      android: ua.match(/Android/)
+    };
+    if (checker.android || checker.iphone || checker.blackberry){
+	$("<link/>", {
+	   rel: "stylesheet",
+	   type: "text/css",
+	   href: "/static/member.mobile.css"
+	}).appendTo("head");
+    }
+    else{
+	$("<link/>", {
+	   rel: "stylesheet",
+	   type: "text/css",
+	   href: "/static/member.css"
+	}).appendTo("head");
+    }
+}
+customizeForDevice();
+
+$.ajaxSetup({ 
+     beforeSend: function(xhr, settings) {
+         function getCookie(name) {
+             var cookieValue = null;
+             if (document.cookie && document.cookie != '') {
+                 var cookies = document.cookie.split(';');
+                 for (var i = 0; i < cookies.length; i++) {
+                     var cookie = jQuery.trim(cookies[i]);
+                     // Does this cookie string begin with the name we want?
+                 if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                     break;
+                 }
+             }
+         }
+         return cookieValue;
+         }
+         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+             // Only send the token to relative URLs i.e. locally.
+             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+         }
+     } 
+});
+</script>
+
+<script type="text/javascript">
+(function($){
+	var member = {
+		isChecked: false,
+		onDocumentReady: function() {
+			var self = member;
+			$('button').button();
+			{% if isChecked %}
+				$('#check_in_btn').button('option', 'label', 'Check out');
+				$('#check_in .current').removeClass('off_red');
+				$('#check_in .current').addClass('on_green').html('YES');
+				self.isChecked = true;
+			{% endif %}
+			$('#check_in_btn').click(function(){
+				$.ajax({
+					url: 'check_in',
+					type: 'POST',
+					success: function(rData){
+						if(self.isChecked){
+							$('#check_in_btn').button('option', 'label', 'Check in');
+							$('#check_in .current').removeClass('on_green');
+							$('#check_in .current').addClass('off_red').html('NO');
+							self.isChecked = false;
+						} else {
+							$('#check_in_btn').button('option', 'label', 'Check out');
+							$('#check_in .current').removeClass('off_red');
+							$('#check_in .current').addClass('on_green').html('YES');
+							self.isChecked = true;
+						}
+						self.displaySuccess();
+					},
+					statusCode:{
+						404: function(){
+							var noty_id = noty({
+								"text":"Fail: Cannot find the member!",
+								"layout":"center",
+								"type":"error",
+								"animateOpen":{"height":"toggle"},
+								"animateClose":{"height":"toggle"},
+								"speed":500,
+								"timeout":5000,
+								"modal": true,
+								"closeButton":true,
+								"closeOnSelfClick":true,
+								"closeOnSelfOver":false
+							});
+						},
+						500: function(){
+							var noty_id = noty({
+								"text":"Fail: Server error! Please contact the administrator.",
+								"layout":"center",
+								"type":"error",
+								"animateOpen":{"height":"toggle"},
+								"animateClose":{"height":"toggle"},
+								"speed":500,
+								"timeout":5000,
+								"modal": true,
+								"closeButton":true,
+								"closeOnSelfClick":true,
+								"closeOnSelfOver":false
+							});
+						},
+					}
+				});
+			});
+
+			$("#dialog:ui-dialog").dialog( "destroy" );
+			$("#weight_in_dialog").dialog({
+				autoOpen: false,
+				height: 200,
+				width: 225,
+				modal: true,
+				draggable: false,
+				resizable: false,
+				title: 'Weight (lbs.)',
+				buttons: {
+					"Send": function() {
+						self.sendWeight();
+						$(this).dialog('close');
+					},
+					Cancel: function() {
+						$( this ).dialog( "close" );
+					}
+				},
+			});
+
+			// hook the submit event
+			$('#weight_in_dialog form').on('submit', function(){
+				self.sendWeight();
+				$("#weight_in_dialog").dialog("close");
+				return false;
+			});
+			$('#weight_in_btn').click(function(){
+				$('#weight_in_dialog input').css('font-size', '50px');
+				$('#weight_in_dialog').dialog('open');
+			});
+		},//onDocumentReady end
+		sendWeight: function(){
+			var self = member;
+			$.ajax({
+				url: 'weight_in',
+				type: 'POST',
+				data: {'weight': $('#weight_in_dialog input').val()},
+				success: function(rData){
+					self.displaySuccess();
+					$('#weight_in .current').html(rData);
+				},
+				statusCode:{
+					404: function(){
+						var noty_id = noty({
+							"text":"Fail: Cannot find the member!",
+							"layout":"center",
+							"type":"error",
+							"animateOpen":{"height":"toggle"},
+							"animateClose":{"height":"toggle"},
+							"speed":500,
+							"timeout":5000,
+							"modal": true,
+							"closeButton":true,
+							"closeOnSelfClick":true,
+							"closeOnSelfOver":false
+						});
+					},
+					500: function(){
+						var noty_id = noty({
+							"text":"Fail: Server error! Please contact the administrator.",
+							"layout":"center",
+							"type":"error",
+							"animateOpen":{"height":"toggle"},
+							"animateClose":{"height":"toggle"},
+							"speed":500,
+							"timeout":5000,
+							"modal": true,
+							"closeButton":true,
+							"closeOnSelfClick":true,
+							"closeOnSelfOver":false
+						});
+					},
+				}
+			});
+		},
+		displaySuccess: function(){
+			var self = member;
+			var noty_id = noty({
+				"text":"Successfully modify!",
+				"layout":"topCenter",
+				"type":"success",
+				"animateOpen":{"height":"toggle"},
+				"animateClose":{"height":"toggle"},
+				"speed":500,
+				"timeout":1500,
+				"closeButton":true,
+				"closeOnSelfClick":true,
+				"closeOnSelfOver":false
+			});
+		},
+	};// End of member
+	Pane = {
+		member: member,
+		onDocumentReady: function() {
+			var self = Pane;
+			self.member.onDocumentReady();
+		},
+	};
+	$(Pane.onDocumentReady);
+})(jQuery);
+</script>
+
+</head>
+
+<body>        
+	<div class="top_container">
+		{% if user.is_authenticated %}
+		<a href="/logout/?next={{ request.path }}" class="login_button">Logout</a>
+		{% else %}
+		<a href="{% url django.contrib.auth.views.login %}?next={{request.path}}" class="login_button">Login</a>
+		{% endif %}
+		<div id="name"> {{ name }} </div>
+		{% if user.is_authenticated and not error %}
+		<br />
+		<div id="container">
+			<table>
+				<tbody>
+					<tr id="check_in">
+						<td class="detail">Check in</td>
+						<td class="current off_red">NO</td>
+						<td>
+							<button id="check_in_btn">Check in</button>
+						</td>
+					</tr>
+					<tr id="weight_in">
+						<td class="detail">Weight (lbs.)</td>
+						<td class="current">{{ weight }}</td>
+						<td>
+							<button id="weight_in_btn">Weight in</button>
+						</td>
+					</tr>
+				</tbody>
+			
+			</table>
+
+		</div>
+		<br />
+		{% endif %}
+		{% if not error %}
+		<div class="mat_number">Next Match:</div>
+		<div id="container">
+			<table>
+				<tbody>
+					<tr>
+						<td class="detail">Mat #</td>
+						<td class="current">3</td>
+					</tr>
+					<tr>
+						<td class="detail">Match #</td>
+						<td class="current">24</td>
+					</tr>
+					
+					<tr>
+						<td class="detail">Competitor 1</td>
+						<td class="current">Alan Lee</td>
+					</tr>
+					
+					<tr>
+						<td class="detail">Competitor 2</td>
+						<td class="current">Alex Gu</td>
+					</tr>
+				</tbody>
+			
+			</table>
+
+		</div>
+		{% endif %}
+
+	</div>
+	<div id="weight_in_dialog">
+		<form action="/weight_in" method="POST">
+		<fieldset>
+			<input type="text" name="weight" class="weight_in_input" maxlength="3"/>
+		</fieldset>
+		</form>
+	</div>
+
+</body>
+</html>
+
