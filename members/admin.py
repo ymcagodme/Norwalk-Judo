@@ -17,6 +17,8 @@ from members.models import Announce
 from members.models import Notification
 from members.models import Last_modify_ip
 from members.models import Attendance
+from members.models import Account
+from members.models import Login_record
 
 from contextlib import closing
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -174,6 +176,15 @@ class AnnounceAdmin(admin.ModelAdmin):
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('event', 'days', 'repetitive')
 
+class LoginRecordInline(admin.TabularInline):
+    model = Login_record
+    extra = 0
+    
+class AccountAdmin(admin.ModelAdmin):
+    list_display = ('username', 'permission_level')
+    inlines = [LoginRecordInline]
+
 admin.site.register(Member, MemberAdmin)
 admin.site.register(Announce, AnnounceAdmin)
 admin.site.register(Notification, NotificationAdmin)
+admin.site.register(Account, AccountAdmin)

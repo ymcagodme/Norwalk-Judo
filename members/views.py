@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, date
 import time
 import csv
+import hashlib
 
 # SEE: http://www.traddicts.org/webdevelopment/flexible-and-simple-json-serialization-for-django/ 
 from fix_json import JSONSerializer
@@ -12,13 +13,26 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.utils import simplejson
+from django.core.exceptions import ObjectDoesNotExist
 import json
 
-from members.models import Member, Parent, Tournament, Membership_fee, USJF_membership, Last_modify_ip, Address, Phone, Belt, Announce, Notification
+from members.models import Member, Parent, Tournament, Membership_fee, USJF_membership, Last_modify_ip, Address, Phone, Belt, Announce, Notification, Account, Login_record
 
 from members.forms import AnnounceForm
 
 from google.appengine.api import mail
+
+# This is a decorator
+class president_login_required(object):
+    def __init__(self, f):
+        self.f = f
+    def __call__(self, request):
+        try:
+            Account.objects.get(username=request.session.get('username'))
+        except ObjectDoesNotExist:
+            return HttpResponseRedirect('/president_login')
+        #FIXME consider the next page situation
+        return self.f(request)
 
 @login_required
 def index(request):
@@ -526,7 +540,7 @@ def get_parent_emails(m):
         emails.append(addr)
     return emails
 
-def usjf_expiration(days, repetitive=False):
+def usjf_expiration(days, repetitive=False, partial_display=True):
     m_all = Member.objects.all()    
     u_list = [ u.get('usjf') for u in [ get_details(m) for m in m_all ] ]
     usjf_list = []
@@ -535,8 +549,9 @@ def usjf_expiration(days, repetitive=False):
     expired_member = {}
     for u in usjf_list:
         expired_date = datetime.strptime(u['expired_date'], '%Y-%m-%d')
-        delta = expired_date - datetime.now() + timedelta(hours=-8)
-        if u['renew_status'] or (delta.days < 0):
+        delta = expired_date - (datetime.now() + timedelta(hours=-8))
+        #FIXME: use a hack to fit on president dashboard
+        if u['renew_status'] or (delta.days < 0 and partial_display):
             continue
         elif repetitive:
             if days >= delta.days:
@@ -555,7 +570,7 @@ def m_fee_expiration(days, repetitive=False):
     expired_member = {}
     for m in m_fee_list:
         due_date = datetime.strptime(m['due_date'], '%Y-%m-%d')
-        delta = due_date - datetime.now() + timedelta(hours=-8)
+        delta = due_date - (datetime.now() + timedelta(hours=-8))
         if m['status'] or (delta.days < 0):
             continue
         elif repetitive:
@@ -579,7 +594,7 @@ def notify_expiration(request):
     for key, val in m_fee.iteritems():
         m = Member.objects.filter(pk=key)[0]
         due_date = datetime.strptime(val['due_date'], '%Y-%m-%d')
-        delta = due_date - datetime.now() + timedelta(hours=-8)
+        delta = due_date - (datetime.now() + timedelta(hours=-8))
 
         sender = 'Norwalk Judo <service@norwalkjudo.appspotmail.com>'
         recipients = get_parent_emails(m)
@@ -602,12 +617,12 @@ def notify_expiration(request):
     for key, val in usjf.iteritems():
         m = Member.objects.filter(pk=key)[0]
         expired_date = datetime.strptime(val['expired_date'], '%Y-%m-%d')
-        delta = expired_date - datetime.now() + timedelta(hours=-8)
+        delta = expired_date - (datetime.now() + timedelta(hours=-8))
 
         sender = 'Norwalk Judo <service@norwalkjudo.appspotmail.com>'
         recipients = get_parent_emails(m)
         recipients.append( '%s %s <%s>' % (m.first_name, m.last_name, m.email) )
-        subject = "[Notification] USJF Expiration Soon"
+        subject = "[Notification] USJF Expiration"
         body = """
 
         Dear %s, 
@@ -627,3 +642,107 @@ def notify_expiration(request):
 def user_logout(request):
     logout(request)
     return HttpResponseRedirect('/')
+
+def custom_login(request):
+    #FIXME read the next page parameter. use a hidden field to pass the uri
+    if request.session.get('username'):
+        return HttpResponseRedirect('/president_dashboard')
+    if request.method == 'POST':
+        try:
+            user = Account.objects.get(username=request.POST.get('username'))
+            pwd = request.POST.get('password')
+            pwd = hashlib.sha512(pwd).hexdigest()
+            ip_addr = request.META['REMOTE_ADDR']
+            if pwd == user.password:
+                request.session['username'] = user.username
+                record = Login_record.objects.create(account=user, ip_addr=ip_addr, successfully_login=True)
+                record.save()
+                return HttpResponseRedirect('/president_dashboard')
+            else:
+                record = Login_record.objects.create(account=user, ip_addr=ip_addr, successfully_login=False)
+                record.save()
+                return HttpResponse('Wrong Password')
+        except ObjectDoesNotExist:
+            return HttpResponse('Invalid Username')
+    return render_to_response('president_login.html', {}, context_instance=RequestContext(request))
+
+def custom_logout(request):
+    try:
+        del request.session['username']
+    except KeyError:
+        return HttpResponse('Please Login First')
+    return HttpResponse('You\'re logged out')
+
+@president_login_required
+def custom_sign_up(request):
+    if request.method == 'GET':
+        return render_to_response('president_sign_up.html', {}, context_instance=RequestContext(request))
+    username = request.POST.get('username', '')
+    pwd = request.POST.get('password', '')
+    confirm_pwd = request.POST.get('confirm_password', '')
+    if (username == '') or (pwd == '') or (confirm_pwd == ''):
+        return HttpResponse('Invaild post data, %s %s %s' % (username, pwd, confirm_pwd))
+    try:
+        Account.objects.get(username=username)
+        return HttpResponse('The username has been used')
+    except ObjectDoesNotExist:
+        pwd = hashlib.sha512(pwd).hexdigest()
+        user = Account.objects.create(username=username, password=pwd, permission_level=1)
+        user.save()
+        return HttpResponse('Successfully set up the account')
+
+def get_member_name(pk):
+    m = Member.objects.get(pk=pk)
+    return '%s %s' % (m.first_name, m.last_name)
+
+@president_login_required
+def president_dashboard(request):
+    member_list = []
+    usjf_expired_members = usjf_expiration(30, True, partial_display=False)
+    #FIXME: make a new list to contain each cols in the table.(name, date, days)
+    for pk, details in usjf_expired_members.iteritems():
+        member_pk = pk
+        name = get_member_name(pk)
+        name = name.split(' ')
+        first_name = name[0]
+        last_name = name[1]
+        expired_date = datetime.strptime(details['expired_date'], '%Y-%m-%d')
+        delta = expired_date - (datetime.now() + timedelta(hours=-8))
+        member_list.append(dict(first_name=first_name, last_name=last_name, expiration=details['expired_date'], delta=delta.days, pk=member_pk))
+    return render_to_response('president_dashboard.html', {'usjf_members': member_list }, context_instance=RequestContext(request))
+
+@president_login_required
+def notify_usjf(request):
+    if request.method == 'GET':
+        return HttpResponse('invalid request')
+    pk = request.POST['pk']
+
+    try:
+        m = Member.objects.get(pk=pk)
+        usjf = m.usjf_membership_set.all()[0]
+    except ObjectDoesNotExist:
+        return HttpResponse('Cannot find the member or usjf')
+
+    expired_date = datetime.strptime(str(usjf.expired_date), '%Y-%m-%d')
+    delta = expired_date - (datetime.now() + timedelta(hours=-8))
+    
+    sender = 'Norwalk Judo <service@norwalkjudo.appspotmail.com>'
+    recipients = get_parent_emails(m)
+    recipients.append( '%s %s <%s>' % (m.first_name, m.last_name, m.email) )
+    subject = "[Notification] USJF Expiration"
+    body = """
+
+    Dear %s, 
+    
+    Your USJF membership is going to expire on %s (%s days leave). Please renew it asap.
+    
+    ------------
+    USJF #: %s
+    Expiration Date: %s
+    ------------
+
+    """ % (m.first_name, expired_date, delta.days, usjf.number, expired_date)
+    mail.send_mail(sender=sender, to=recipients, subject=subject, body=body)
+
+    return HttpResponse('Success @ %s' % (Member.objects.get(pk=pk), ))
+

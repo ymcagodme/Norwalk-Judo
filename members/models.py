@@ -273,3 +273,20 @@ class Attendance(models.Model):
 
     def __unicode__(self):
         return self.date.isoformat()
+
+class Login_record(models.Model):
+    account = models.ForeignKey('Account')
+    date = models.DateTimeField(auto_now=True)
+    ip_addr = models.IPAddressField()
+    successfully_login = models.BooleanField()
+    def __unicode__(self):
+        return '%s' % (self.date,)
+
+class Account(models.Model):
+    username = models.CharField(max_length=100)
+    password = models.CharField(max_length=200)
+    permission_level = models.PositiveIntegerField()
+    active = models.BooleanField()
+    
+    def __unicode__(self):
+        return '%s' % (self.username, )

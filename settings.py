@@ -8,9 +8,9 @@ import os
 DEBUG = False
 
 TIME_ZONE = None
-#from google.appengine.tools import dev_appserver
-#import atexit
-#atexit.register(dev_appserver.TearDownStubs)
+from google.appengine.tools import dev_appserver
+import atexit
+atexit.register(dev_appserver.TearDownStubs)
 
 # Activate django-dbindexer for the default database
 DATABASES['native'] = DATABASES['default']
