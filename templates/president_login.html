@@ -1,0 +1,91 @@
+{% load url from future %}
+{% block content %}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<title>President Login</title>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.js"></script>
+<script type="text/javascript">
+(function($){
+	Pane = {
+		onDocumentReady: function() {
+			var self = Pane;
+			$('#id_username').focus();
+		},
+	};
+	$(Pane.onDocumentReady);
+})(jQuery);
+
+</script>
+
+<style>
+body{
+	width:960px;
+	margin: 0 auto;
+	background-color: black;
+	color: #72F2F2;
+}
+.login_dialog{
+	font-family: "Lucida Console", Monaco, monospace;
+	background-color: #123340;
+	font-variant: small-caps;
+	font-size: 20px;
+	border: 1px solid #3BBCD9;
+	color: #57E3F2;
+	padding: 1em;
+	width:250px;
+}
+.title{
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-variant: small-caps;
+	font-size: 40px;
+	margin-top: 2em;
+	margin-bottom: 10px;
+	width:291px;
+}
+input{
+	border: 1px solid #3BBCD9;
+	background-color: black;
+	color: white;
+}
+input:hover{
+	background-color: #0B1E26;
+}
+</style>
+
+</head>
+
+<body>        
+<center>
+
+<header class="title">President Login</header>
+
+<div class="login_dialog">
+
+	<form method="post" action="/president_login">
+	{% csrf_token %}
+	<table>
+	<tr>
+		<td><label for="username">Username</label></td>
+		<td><input id="username" name="username" type="text" maxlength="50"></td>
+	</tr>
+	<tr>
+		<td><label for="password">Password</label></td>
+		<td><input id="password" name="password" type="password" maxlength="50"></td>
+	</tr>
+	</table>
+
+	<input type="submit" value="Login" />
+	<input type="hidden" name="next" value="{{ Next }}" />
+	</form>
+
+</div>
+
+{% if Error %}
+<p style="color:red; font-size: 20px;">Invalid username or password. Please try again.</p>
+{% endif %}
+
+{% endblock %}
+
+</center>

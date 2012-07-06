@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<meta name="viewport" content="width = device-width">
+<title>President | Norwalk Judo</title>
+
+<link type="text/css" rel="stylesheet" href="/static/jquery-ui-1.8.18.custom.css">
+<link type="text/css" rel="stylesheet" href="/static/main.css">
+<link type="text/css" rel="stylesheet" href="/static/jquery.noty.css">
+<link type="text/css" rel="stylesheet" href="/static/noty_theme_default.css">
+<script type="text/javascript" src="/static/js/jquery-1.7.1.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery-ui-1.8.18.custom.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.noty.js"></script>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31357982-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+<script type="text/javascript">
+$.ajaxSetup({ 
+     beforeSend: function(xhr, settings) {
+         function getCookie(name) {
+             var cookieValue = null;
+             if (document.cookie && document.cookie != '') {
+                 var cookies = document.cookie.split(';');
+                 for (var i = 0; i < cookies.length; i++) {
+                     var cookie = jQuery.trim(cookies[i]);
+                     // Does this cookie string begin with the name we want?
+                 if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                     break;
+                 }
+             }
+         }
+         return cookieValue;
+         }
+         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+             // Only send the token to relative URLs i.e. locally.
+             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+         }
+     } 
+});
+</script>
+
+<script type="text/javascript">
+(function($){
+	var table = {
+		onDocumentReady: function() {
+			var self = table;
+			$('.email_btn').button({
+				icons: {
+					primary: "ui-icon-mail-closed"
+				}
+			});
+			$('#usjf .email_btn').click(function(){
+				$.noty.closeAll();
+				var pk = this.id;
+				var noty_confirm = noty({
+					"text": "Are you sure you want to send a notification?",
+					"layout": "center",
+					"modal": true,
+					"type": "alert",
+					"closable": false,
+					"timeout": false,
+					"buttons": [
+						{
+							type: 'button green', text: 'Send', click: function($noty){
+								$noty.close();
+								var noty_loading = noty({
+									"text":"Loading...",
+									"layout":"center",
+									"type":"information",
+									"animateOpen":{"height":"toggle"},
+									"animateClose":{"height":"toggle"},
+									"speed":500,
+									"timeout": false,
+									"closeButton":false,
+									"closeOnSelfClick":false,
+									"closeOnSelfOver":false,
+									"modal":true
+								});
+								$.ajax({
+									url: "/notify_usjf",
+									type: "POST",
+									data: { pk: pk },
+									success: function(rData){
+										console.log(rData);
+										$.noty.closeAll();
+										var noty_id = noty({
+											"text":"Notification has been sent.",
+											"layout":"topCenter",
+											"type":"success",
+											"animateOpen":{"height":"toggle"},
+											"animateClose":{"height":"toggle"},
+											"speed":500,
+											"timeout":2000,
+											"closeButton":true,
+											"closeOnSelfClick":true,
+											"closeOnSelfOver":false,
+											"modal":false
+										});
+										$('#usjf #' + pk).button('disable');
+										$('#usjf #' + pk).button('option', 'label', 'Sent');
+									},
+									statusCode:{
+										404: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(404)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										500: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(500)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										   
+									},
+								});
+							}
+						},
+						{
+							type: 'button pink', text: 'Cancel', click: function($noty){
+								$noty.close();
+								noty({layout: "topCenter", timeout: 2000, closeButton: true, force: true, text: 'The action has been canceled', type: 'error'});
+							}
+						}
+					],
+				});
+			});
+		}//onDocumentReady end
+	};// End of table
+	Pane = {
+		table: table,
+		onDocumentReady: function() {
+			var self = Pane;
+			self.table.onDocumentReady();
+		}
+	};
+	$(Pane.onDocumentReady);
+})(jQuery);
+</script>
+
+</head>
+
+<body>        
+	<header class=header>
+	<div class="inner_header">
+		<div class="nav_profile">
+			<button id="admin">Go to Admin</button>
+			<a href="/logout">Sign Out</a>
+		</div>
+		<a href="/"><img src="/static/logo_norwalk.png" /></a>
+	</div>
+	</header>
+	
+	<table id="usjf">
+	    <thead>
+		<tr>
+		    <th scope="col">First name</th>
+		    <th scope="col">Last name</th>
+		    <th scope="col">Expiration Date</th>
+		    <th scope="col">Email</th>
+		    <th scope="col">Renew</th>
+		</th>
+	    </thead>
+	    <tfoot>
+	        <tr>
+			<td colspan="4"><em>Total: {{ usjf_members|length }}</em></td>
+	        </tr>
+	    </tfoot>
+	    <tbody>
+		{% for m in usjf_members|dictsort:"expiration" %}
+	    	<tr>
+		    <td>{{ m.first_name }}</td>
+		    <td>{{ m.last_name }}</td>
+		    <td>{{ m.expiration }}({{m.delta}} days)</td>
+		    <td><button class="email_btn" id="{{ m.pk }}">Notify</button></td>
+		    <td><button class="renew_btn" id="{{ m.pk }}">Renew</button></td>
+	    	</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+	
+</body>
+</html>
+
