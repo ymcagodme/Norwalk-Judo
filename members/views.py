@@ -716,7 +716,6 @@ def notify_usjf(request):
     if request.method == 'GET':
         return HttpResponse('invalid request')
     pk = request.POST['pk']
-
     try:
         m = Member.objects.get(pk=pk)
         usjf = m.usjf_membership_set.all()[0]
@@ -743,6 +742,20 @@ def notify_usjf(request):
 
     """ % (m.first_name, expired_date, delta.days, usjf.number, expired_date)
     mail.send_mail(sender=sender, to=recipients, subject=subject, body=body)
+    return HttpResponse('Successfully Send @ %s' % (Member.objects.get(pk=pk), ))
 
-    return HttpResponse('Success @ %s' % (Member.objects.get(pk=pk), ))
+@president_login_required
+def renew_usjf(request):
+    if request.method == 'GET':
+        return HttpResponse('invalid request')
+    pk = request.POST['pk']
+    try:
+        m = Member.objects.get(pk=pk)
+        usjf = m.usjf_membership_set.all()[0]
+    except ObjectDoesNotExist:
+        return HttpResponse('Cannot find the member or usjf')
+    usjf.renew_status = True
+    usjf.save()
+    return HttpResponse('Successfully Renew @ %s' % (Member.objects.get(pk=pk), ))
+
 

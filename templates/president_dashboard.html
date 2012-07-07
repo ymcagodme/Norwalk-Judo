@@ -62,6 +62,11 @@ $.ajaxSetup({
 					primary: "ui-icon-mail-closed"
 				}
 			});
+			$('.renew_btn').button({
+				icons: {
+					primary: "ui-icon-circle-check"
+				}
+			});
 			$('#usjf .email_btn').click(function(){
 				$.noty.closeAll();
 				var pk = this.id;
@@ -111,6 +116,81 @@ $.ajaxSetup({
 										});
 										$('#usjf #' + pk).button('disable');
 										$('#usjf #' + pk).button('option', 'label', 'Sent');
+									},
+									statusCode:{
+										404: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(404)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										500: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(500)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										   
+									},
+								});
+							}
+						},
+						{
+							type: 'button pink', text: 'Cancel', click: function($noty){
+								$noty.close();
+								noty({layout: "topCenter", timeout: 2000, closeButton: true, force: true, text: 'The action has been canceled', type: 'error'});
+							}
+						}
+					],
+				});
+			});
+			$('#usjf .renew_btn').click(function(){
+				$.noty.closeAll();
+				var pk = this.id;
+				var row = $(this).parents('tr');
+				var noty_confirm = noty({
+					"text": "Are you sure you want to renew the USJF membership?",
+					"layout": "center",
+					"modal": true,
+					"type": "alert",
+					"closable": false,
+					"timeout": false,
+					"buttons": [
+						{
+							type: 'button green', text: 'Renew', click: function($noty){
+								$noty.close();
+								var noty_loading = noty({
+									"text":"Loading...",
+									"layout":"center",
+									"type":"information",
+									"animateOpen":{"height":"toggle"},
+									"animateClose":{"height":"toggle"},
+									"speed":500,
+									"timeout": false,
+									"closeButton":false,
+									"closeOnSelfClick":false,
+									"closeOnSelfOver":false,
+									"modal":true
+								});
+								$.ajax({
+									url: "/renew_usjf",
+									type: "POST",
+									data: { pk: pk },
+									success: function(rData){
+										console.log(rData);
+										$.noty.closeAll();
+										var noty_id = noty({
+											"text":"The USJF has been renewed",
+											"layout":"topCenter",
+											"type":"success",
+											"animateOpen":{"height":"toggle"},
+											"animateClose":{"height":"toggle"},
+											"speed":500,
+											"timeout":2000,
+											"closeButton":true,
+											"closeOnSelfClick":true,
+											"closeOnSelfOver":false,
+											"modal":false
+										});
+										row.fadeOut();
 									},
 									statusCode:{
 										404: function(){
