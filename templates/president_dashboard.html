@@ -4,8 +4,10 @@
 <meta name="viewport" content="width = device-width">
 <title>President | Norwalk Judo</title>
 
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.5.1/build/cssreset/cssreset-min.css">
 <link type="text/css" rel="stylesheet" href="/static/jquery-ui-1.8.18.custom.css">
 <link type="text/css" rel="stylesheet" href="/static/main.css">
+<link type="text/css" rel="stylesheet" href="/static/president_dashboard.css">
 <link type="text/css" rel="stylesheet" href="/static/jquery.noty.css">
 <link type="text/css" rel="stylesheet" href="/static/noty_theme_default.css">
 <script type="text/javascript" src="/static/js/jquery-1.7.1.min.js"></script>
@@ -57,6 +59,9 @@ $.ajaxSetup({
 	var table = {
 		onDocumentReady: function() {
 			var self = table;
+			// Move to the porper option
+			$('#usjf_container option[value="{{ usjf_days }}"]').attr('selected', 'selected');
+			$('#m_fee_container option[value="{{ m_fee_days }}"]').attr('selected', 'selected');
 			$('.email_btn').button({
 				icons: {
 					primary: "ui-icon-mail-closed"
@@ -66,6 +71,14 @@ $.ajaxSetup({
 				icons: {
 					primary: "ui-icon-circle-check"
 				}
+			});
+
+			$('select').on('change', function(){
+				self.loading_animation();
+				var usjf_days = $('select[name="usjf_days"]').val();
+				var m_fee_days = $('select[name="m_fee_days"]').val();
+				var root_url = location.protocol + '//' + location.host;
+				window.location.href = 'president_dashboard?' + 'usjf_days=' + usjf_days + '&' + 'm_fee_days=' + m_fee_days;
 			});
 			$('#usjf .email_btn').click(function(){
 				$.noty.closeAll();
@@ -136,7 +149,6 @@ $.ajaxSetup({
 						{
 							type: 'button pink', text: 'Cancel', click: function($noty){
 								$noty.close();
-								noty({layout: "topCenter", timeout: 2000, closeButton: true, force: true, text: 'The action has been canceled', type: 'error'});
 							}
 						}
 					],
@@ -211,13 +223,180 @@ $.ajaxSetup({
 						{
 							type: 'button pink', text: 'Cancel', click: function($noty){
 								$noty.close();
-								noty({layout: "topCenter", timeout: 2000, closeButton: true, force: true, text: 'The action has been canceled', type: 'error'});
 							}
 						}
 					],
 				});
 			});
-		}//onDocumentReady end
+
+			$('#m_fee .email_btn').click(function(){
+				$.noty.closeAll();
+				var m_fee_pk = this.id;
+				var noty_confirm = noty({
+					"text": "Are you sure you want to send a notification?",
+					"layout": "center",
+					"modal": true,
+					"type": "alert",
+					"closable": false,
+					"timeout": false,
+					"buttons": [
+						{
+							type: 'button green', text: 'Send', click: function($noty){
+								$noty.close();
+								var noty_loading = noty({
+									"text":"Loading...",
+									"layout":"center",
+									"type":"information",
+									"animateOpen":{"height":"toggle"},
+									"animateClose":{"height":"toggle"},
+									"speed":500,
+									"timeout": false,
+									"closeButton":false,
+									"closeOnSelfClick":false,
+									"closeOnSelfOver":false,
+									"modal":true
+								});
+								$.ajax({
+									url: "/notify_m_fee",
+									type: "POST",
+									data: { m_fee_pk: m_fee_pk },
+									success: function(rData){
+										console.log(rData);
+										$.noty.closeAll();
+										var noty_id = noty({
+											"text":"Notification has been sent.",
+											"layout":"topCenter",
+											"type":"success",
+											"animateOpen":{"height":"toggle"},
+											"animateClose":{"height":"toggle"},
+											"speed":500,
+											"timeout":2000,
+											"closeButton":true,
+											"closeOnSelfClick":true,
+											"closeOnSelfOver":false,
+											"modal":false
+										});
+										$('#usjf #' + pk).button('disable');
+										$('#usjf #' + pk).button('option', 'label', 'Sent');
+									},
+									statusCode:{
+										404: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(404)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										500: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(500)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										   
+									},
+								});
+							}
+						},
+						{
+							type: 'button pink', text: 'Cancel', click: function($noty){
+								$noty.close();
+							}
+						}
+					],
+				});
+			});
+
+			$('#m_fee .renew_btn').click(function(){
+				$.noty.closeAll();
+				var m_fee_pk = this.id;
+				var row = $(this).parents('tr');
+				var noty_confirm = noty({
+					"text": "Are you sure you want to renew the Norwalk Judo membership?",
+					"layout": "center",
+					"modal": true,
+					"type": "alert",
+					"closable": false,
+					"timeout": false,
+					"buttons": [
+						{
+							type: 'button green', text: 'Renew', click: function($noty){
+								$noty.close();
+								var noty_loading = noty({
+									"text":"Loading...",
+									"layout":"center",
+									"type":"information",
+									"animateOpen":{"height":"toggle"},
+									"animateClose":{"height":"toggle"},
+									"speed":500,
+									"timeout": false,
+									"closeButton":false,
+									"closeOnSelfClick":false,
+									"closeOnSelfOver":false,
+									"modal":true
+								});
+								$.ajax({
+									url: "/renew_m_fee",
+									type: "POST",
+									data: { m_fee_pk: m_fee_pk },
+									success: function(rData){
+										console.log(rData);
+										$.noty.closeAll();
+										var noty_id = noty({
+											"text":"The USJF has been renewed",
+											"layout":"topCenter",
+											"type":"success",
+											"animateOpen":{"height":"toggle"},
+											"animateClose":{"height":"toggle"},
+											"speed":500,
+											"timeout":2000,
+											"closeButton":true,
+											"closeOnSelfClick":true,
+											"closeOnSelfOver":false,
+											"modal":false
+										});
+										row.fadeOut();
+									},
+									statusCode:{
+										404: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(404)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										500: function(){
+											$.noty.closeAll();
+											noty({layout: "topCenter", timeout: 10000, closeButton: true, force: true, text: 'Server error(500)! Please contact the admin to slove this problem. The notification have NOT been sent.', type: 'error'});
+
+										},
+										   
+									},
+								});
+							}
+						},
+						{
+							type: 'button pink', text: 'Cancel', click: function($noty){
+								$noty.close();
+							}
+						}
+					],
+				});
+			});
+		},//onDocumentReady end
+		loading_animation: function(){
+			self = table;
+			$.noty.closeAll();
+			var noty_loading = noty({
+				"text":"Loading...",
+				"layout":"center",
+				"type":"information",
+				"animateOpen":{"height":"toggle"},
+				"animateClose":{"height":"toggle"},
+				"speed":0,
+				"timeout": false,
+				"closeButton":false,
+				"closeOnSelfClick":false,
+				"closeOnSelfOver":false,
+				"modal":true
+			});
+
+		} //loading_animation end
 	};// End of table
 	Pane = {
 		table: table,
@@ -243,6 +422,17 @@ $.ajaxSetup({
 	</div>
 	</header>
 	
+<div class="table_item" id="usjf_container">
+	<h1 style="font-size: 20px; font-weight: bold;">USJF Expiration</h1>
+	In
+		<select name="usjf_days">
+			<option value="0">Expired</option>
+			<option value="30">30</option>
+			<option value="60">60</option>
+			<option value="90">90</option>
+		</select>
+	Days
+	<hr />
 	<table id="usjf">
 	    <thead>
 		<tr>
@@ -270,6 +460,49 @@ $.ajaxSetup({
 		{% endfor %}
 	    </tbody>
 	</table>
+</div>
+
+<div class="table_item" id="m_fee_container">
+	<h1 style="font-size: 20px; font-weight: bold;">Membersip Fee Expiration</h1>
+	In
+		<select name="m_fee_days">
+			<option value="0">Expired</option>
+			<option value="30">30</option>
+			<option value="60">60</option>
+			<option value="90">90</option>
+		</select>
+	Days
+	<hr />
+	<table id="m_fee">
+	    <thead>
+		<tr>
+		    <th scope="col">First name</th>
+		    <th scope="col">Last name</th>
+		    <th scope="col">Expiration Date</th>
+		    <th scope="col">Amount</th>
+		    <th scope="col">Email</th>
+		    <th scope="col">Renew</th>
+		</th>
+	    </thead>
+	    <tfoot>
+	        <tr>
+			<td colspan="4"><em>Total: {{ m_fee_list|length }}</em></td>
+	        </tr>
+	    </tfoot>
+	    <tbody>
+		{% for m in m_fee_list|dictsort:"expiration" %}
+	    	<tr>
+		    <td>{{ m.first_name }}</td>
+		    <td>{{ m.last_name }}</td>
+		    <td>{{ m.expiration }}({{m.delta}} days)</td>
+		    <td>{{ m.amount }} USD.</td>
+		    <td><button class="email_btn" id="{{ m.m_fee_pk }}">Notify</button></td>
+		    <td><button class="renew_btn" id="{{ m.m_fee_pk }}">Renew</button></td>
+	    	</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+</div>
 	
 </body>
 </html>

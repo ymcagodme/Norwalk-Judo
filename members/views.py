@@ -6,7 +6,7 @@ import hashlib
 # SEE: http://www.traddicts.org/webdevelopment/flexible-and-simple-json-serialization-for-django/ 
 from fix_json import JSONSerializer
 
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseBadRequest
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.views.decorators.csrf import csrf_exempt
@@ -540,7 +540,7 @@ def get_parent_emails(m):
         emails.append(addr)
     return emails
 
-def usjf_expiration(days, repetitive=False, partial_display=True):
+def usjf_expiration(days, repetitive=False, display_expired=True):
     m_all = Member.objects.all()    
     u_list = [ u.get('usjf') for u in [ get_details(m) for m in m_all ] ]
     usjf_list = []
@@ -551,7 +551,7 @@ def usjf_expiration(days, repetitive=False, partial_display=True):
         expired_date = datetime.strptime(u['expired_date'], '%Y-%m-%d')
         delta = expired_date - (datetime.now() + timedelta(hours=-8))
         #FIXME: use a hack to fit on president dashboard
-        if u['renew_status'] or (delta.days < 0 and partial_display):
+        if u['renew_status'] or (delta.days < 0 and display_expired):
             continue
         elif repetitive:
             if days >= delta.days:
@@ -561,7 +561,7 @@ def usjf_expiration(days, repetitive=False, partial_display=True):
                 expired_member[ u['member']['pk'] ] = u
     return expired_member
     
-def m_fee_expiration(days, repetitive=False):
+def m_fee_expiration(days, repetitive=False, display_expired=True):
     m_all = Member.objects.all()    
     f_list = [ f.get('m_fee') for f in [ get_details(m) for m in m_all ] ]
     m_fee_list = []
@@ -571,7 +571,7 @@ def m_fee_expiration(days, repetitive=False):
     for m in m_fee_list:
         due_date = datetime.strptime(m['due_date'], '%Y-%m-%d')
         delta = due_date - (datetime.now() + timedelta(hours=-8))
-        if m['status'] or (delta.days < 0):
+        if m['status'] or (delta.days < 0 and display_expired):
             continue
         elif repetitive:
             if days >= delta.days:
@@ -604,11 +604,11 @@ def notify_expiration(request):
 
         Dear %s, 
         
-        Your Norwalk Judo membership fee due to %s (%s days leave). Please renew it asap.
+        Your Norwalk Judo membership is going to expire on %s (%s days leave). Please renew it asap.
         
         ------------
-        Amount: %s (USD.)
-        Due Date: %s
+        Fee: %s (USD.)
+        Expiration Date: %s
         ------------
 
         """ % (m.first_name, val['due_date'], delta.days, val['amount'], val['due_date'] )
@@ -697,9 +697,14 @@ def get_member_name(pk):
 
 @president_login_required
 def president_dashboard(request):
-    member_list = []
-    usjf_expired_members = usjf_expiration(30, True, partial_display=False)
-    #FIXME: make a new list to contain each cols in the table.(name, date, days)
+    if request.method == "GET":
+        # Be careful the type here. Have to be int!
+        usjf_days = int(request.GET.get('usjf_days', 30))
+        m_fee_days = int(request.GET.get('m_fee_days', 30))
+
+    # Counting USJF Expiration
+    usjf_list = []
+    usjf_expired_members = usjf_expiration(usjf_days, True, display_expired=False)
     for pk, details in usjf_expired_members.iteritems():
         member_pk = pk
         name = get_member_name(pk)
@@ -708,8 +713,23 @@ def president_dashboard(request):
         last_name = name[1]
         expired_date = datetime.strptime(details['expired_date'], '%Y-%m-%d')
         delta = expired_date - (datetime.now() + timedelta(hours=-8))
-        member_list.append(dict(first_name=first_name, last_name=last_name, expiration=details['expired_date'], delta=delta.days, pk=member_pk))
-    return render_to_response('president_dashboard.html', {'usjf_members': member_list }, context_instance=RequestContext(request))
+        usjf_list.append(dict(first_name=first_name, last_name=last_name, expiration=details['expired_date'], delta=delta.days, pk=member_pk))
+    
+    # Counting Membership fee Expiration
+    m_fee_list = []
+    m_fee_members = m_fee_expiration(m_fee_days, True, False)
+    for pk, details in m_fee_members.iteritems():
+        m_fee_pk = details['id']
+        name = get_member_name(pk)
+        name = name.split(' ')
+        first_name = name[0]
+        last_name = name[1]
+        due_date = datetime.strptime(details['due_date'], '%Y-%m-%d')
+        delta = due_date - (datetime.now() + timedelta(hours=-8))
+        amount = details['amount']
+        m_fee_list.append(dict(first_name=first_name, last_name=last_name, expiration=details['due_date'], delta=delta.days, m_fee_pk=m_fee_pk, amount=amount))
+
+    return render_to_response('president_dashboard.html', {'usjf_days': usjf_days, 'm_fee_days': m_fee_days, 'usjf_members': usjf_list, 'm_fee_list': m_fee_list}, context_instance=RequestContext(request))
 
 @president_login_required
 def notify_usjf(request):
@@ -747,15 +767,60 @@ def notify_usjf(request):
 @president_login_required
 def renew_usjf(request):
     if request.method == 'GET':
-        return HttpResponse('invalid request')
+        return HttpResponseBadRequest()
     pk = request.POST['pk']
     try:
         m = Member.objects.get(pk=pk)
         usjf = m.usjf_membership_set.all()[0]
     except ObjectDoesNotExist:
-        return HttpResponse('Cannot find the member or usjf')
+        return HttpResponseNotFound()
     usjf.renew_status = True
     usjf.save()
     return HttpResponse('Successfully Renew @ %s' % (Member.objects.get(pk=pk), ))
 
+@president_login_required
+def notify_m_fee(request):
+    if request.method == 'GET':
+        return HttpResponseBadRequest()
+    m_fee_pk = request.POST['m_fee_pk']
+    try:
+        m_fee = Membership_fee.objects.get(pk=m_fee_pk)
+        m = m_fee.member
+    except ObjectDoesNotExist:
+        return HttpResponseNotFound()
 
+    due_date = datetime.strptime(str(m_fee.due_date), '%Y-%m-%d')
+    delta = due_date - (datetime.now() + timedelta(hours=-8))
+    amount = m_fee.amount
+    
+    sender = 'Norwalk Judo <service@norwalkjudo.appspotmail.com>'
+    recipients = get_parent_emails(m)
+    recipients.append( '%s %s <%s>' % (m.first_name, m.last_name, m.email) )
+    subject = "[Notification] Norwalk Judo Membersip Fee"
+    body = """
+
+    Dear %s, 
+    
+    Your Norwalk Judo membership is going to expire on %s (%s days leave). Please renew it asap.
+    
+    ------------
+    Fee: %s (USD.)
+    Expiration Date: %s
+    ------------
+
+    """ % (m.first_name, due_date, delta.days, amount, due_date )
+    mail.send_mail(sender=sender, to=recipients, subject=subject, body=body)
+    return HttpResponse('Successfully Send @ %s' % (m, ))
+
+@president_login_required
+def renew_m_fee(request):
+    if request.method == 'GET':
+        return HttpResponseBadRequest()
+    m_fee_pk = request.POST['m_fee_pk']
+    try:
+        m_fee = Membership_fee.objects.get(pk=m_fee_pk)
+    except ObjectDoesNotExist:
+        return HttpResponseNotFound()
+    m_fee.status = True
+    m_fee.save()
+    return HttpResponse('Successfully Renew @ %s' % (m_fee.member, ))
