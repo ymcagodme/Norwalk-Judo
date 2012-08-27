@@ -59,6 +59,9 @@ $.ajaxSetup({
 	var table = {
 		onDocumentReady: function() {
 			var self = table;
+
+			// FIXME: need to handle the situation with one member have two payment panding
+
 			// Move to the porper option
 			$('#usjf_container option[value="{{ usjf_days }}"]').attr('selected', 'selected');
 			$('#m_fee_container option[value="{{ m_fee_days }}"]').attr('selected', 'selected');
@@ -80,6 +83,9 @@ $.ajaxSetup({
 				var root_url = location.protocol + '//' + location.host;
 				window.location.href = 'president_dashboard?' + 'usjf_days=' + usjf_days + '&' + 'm_fee_days=' + m_fee_days;
 			});
+
+			var mFeeCount = {{ m_fee_list|length }};
+			var usjfCount = {{ usjf_members|length }};
 			$('#usjf .email_btn').click(function(){
 				$.noty.closeAll();
 				var pk = this.id;
@@ -203,6 +209,7 @@ $.ajaxSetup({
 											"modal":false
 										});
 										row.fadeOut();
+										$('#usjf #count').html("Total: " + (--usjfCount));
 									},
 									statusCode:{
 										404: function(){
@@ -353,6 +360,7 @@ $.ajaxSetup({
 											"modal":false
 										});
 										row.fadeOut();
+										$('#m_fee #count').html("Total: " + (--mFeeCount));
 									},
 									statusCode:{
 										404: function(){
@@ -395,7 +403,6 @@ $.ajaxSetup({
 				"closeOnSelfOver":false,
 				"modal":true
 			});
-
 		} //loading_animation end
 	};// End of table
 	Pane = {
@@ -445,7 +452,7 @@ $.ajaxSetup({
 	    </thead>
 	    <tfoot>
 	        <tr>
-			<td colspan="4"><em>Total: {{ usjf_members|length }}</em></td>
+			<td id="count" colspan="4"><em>Total: {{ usjf_members|length }}</em></td>
 	        </tr>
 	    </tfoot>
 	    <tbody>
@@ -486,7 +493,7 @@ $.ajaxSetup({
 	    </thead>
 	    <tfoot>
 	        <tr>
-			<td colspan="4"><em>Total: {{ m_fee_list|length }}</em></td>
+			<td id="count" colspan="4"><em>Total: {{ m_fee_list|length }}</em></td>
 	        </tr>
 	    </tfoot>
 	    <tbody>
